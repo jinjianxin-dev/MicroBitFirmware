@@ -1,4 +1,57 @@
-let command = ""
+/// <reference path="protocol.ts" />
+/// <reference path="command.ts" />
+/// <reference path="parser.ts" />
+/// <reference path="response.ts" />
+/// <reference path="handlers/button.ts" />
+/// <reference path="handlers/direction.ts" />
+/// <reference path="handlers/number.ts" />
+/// <reference path="handlers/system.ts" />
+/// <reference path="response.ts" />
+/// <reference path="transport.ts" />
+/// <reference path="router.ts" />
+
+
+let response =
+    MBResponse.ok(
+        "TEST"
+    )
+
+input.onButtonPressed(Button.A, function () {
+	MBTransport.send(
+    response
+)
+})
+
+let result =
+    MBParser.parse(
+        "BTN:A"
+    )
+
+
+input.onButtonPressed(Button.B, function () {
+    MBRouter.handle(
+    result
+    )
+})
+
+
+
+bluetooth.startUartService()
+bluetooth.onUartDataReceived(
+    serial.delimiters(Delimiters.NewLine),
+    function () {
+
+        let command = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))
+
+        let result = MBParser.parse(command)
+
+        MBRouter.handle(result)
+    }
+)
+
+/*
+let command=""
+
 
 bluetooth.startUartService()
 basic.showIcon(IconNames.Yes)
@@ -16,7 +69,7 @@ function handleCommand(cmd: string) {
     bluetooth.uartWriteLine("OK:" + command)
 
     cmd = cmd.trim()
-    
+
     if (cmd == "UP") {
 
         executeUp()
@@ -100,4 +153,4 @@ function executeNumber(num:number){
 
     basic.showNumber(num)
 
-}
+}*/

@@ -22,3 +22,14 @@ To edit this repository in MakeCode.
 
 * for PXT/
 <script src="https://makecode.com/gh-pages-embed.js"></script><script>makeCodeRender("{{ site.makecode.home_url }}", "{{ site.github.owner_name }}/{{ site.github.repository_name }}");</script>
+
+## Version History
+
+### MB-V1.2.0
+
+- Protocol architecture completed
+- Command Router completed
+- Handler modularization
+- ACK response implemented
+- Android protocol compatible
+- Stable bidirectional BLE communication

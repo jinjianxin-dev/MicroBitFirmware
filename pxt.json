@@ -9,7 +9,17 @@
     },
     "files": [
         "main.ts",
-        "README.md"
+        "README.md",
+        "protocol.ts",
+        "command.ts",
+        "parser.ts",
+        "handlers/button.ts",
+        "handlers/direction.ts",
+        "handlers/number.ts",
+        "handlers/system.ts",
+        "response.ts",
+        "transport.ts",
+        "router.ts"
     ],
     "testFiles": [
         "test.ts"
