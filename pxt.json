@@ -22,7 +22,10 @@
         "router/router.ts",
         "core/MBVersion.ts",
         "core/MBConfig.ts",
-        "core/MBBoard.ts"
+        "core/MBBoard.ts",
+        "core/MBEnums.ts",
+        "devices/MBMotor.ts",
+        "devices/MBServo.ts"
     ],
     "testFiles": [
         "test.ts"
