@@ -19,7 +19,10 @@
         "handlers/system.ts",
         "protocol/response.ts",
         "communication/transport.ts",
-        "router/router.ts"
+        "router/router.ts",
+        "core/MBVersion.ts",
+        "core/MBConfig.ts",
+        "core/MBBoard.ts"
     ],
     "testFiles": [
         "test.ts"
