@@ -1,14 +1,14 @@
-/// <reference path="protocol.ts" />
-/// <reference path="command.ts" />
-/// <reference path="parser.ts" />
-/// <reference path="response.ts" />
+/// <reference path="protocol/protocol.ts" />
+/// <reference path="protocol/command.ts" />
+/// <reference path="protocol/parser.ts" />
+/// <reference path="protocol/response.ts" />
 /// <reference path="handlers/button.ts" />
 /// <reference path="handlers/direction.ts" />
 /// <reference path="handlers/number.ts" />
 /// <reference path="handlers/system.ts" />
-/// <reference path="response.ts" />
-/// <reference path="transport.ts" />
-/// <reference path="router.ts" />
+/// <reference path="communication/transport.ts" />
+/// <reference path="router/router.ts" />
+
 
 
 let response =
@@ -35,19 +35,36 @@ input.onButtonPressed(Button.B, function () {
 })
 
 
-
 bluetooth.startUartService()
+
+
 bluetooth.onUartDataReceived(
     serial.delimiters(Delimiters.NewLine),
+    
     function () {
-
+        
         let command = bluetooth.uartReadUntil(serial.delimiters(Delimiters.NewLine))
-
         let result = MBParser.parse(command)
-
         MBRouter.handle(result)
+
+        /*
+
+        let res = new MBParser.Result(true, 'NUM', '1')
+        MBRouter.handle(res)
+        
+        //测试
+        //bluetooth.uartWriteLine( "show command:" + command)
+
+     
+        /*测试
+        if (result.valid) { 
+        bluetooth.uartWriteLine(  "show parse:" + result.type  )
+        }
+
+        */
     }
 )
+
 
 /*
 let command=""
@@ -153,4 +170,5 @@ function executeNumber(num:number){
 
     basic.showNumber(num)
 
-}*/
+}
+    */
