@@ -1,27 +1,32 @@
+# MicroBitFirmware
 
-> Open this page at [https://.github.io//](https://.github.io//)
+Micro:bit BLE Controller Firmware Extension.
+
+A custom firmware framework for Android BLE control.
 
 ## Use as Extension
 
-This repository can be added as an **extension** in MakeCode.
+This repository can be added as an extension in MakeCode.
 
-* open []()
-* click on **New Project**
-* click on **Extensions** under the gearwheel menu
-* search for **https://github.com/** and import
+1. Open MakeCode
+2. Click **New Project**
+3. Open **Extensions**
+4. Enter:
+https://github.com/jinjianxin-dev/MicroBitController
 
-## Edit this project
+5. Import the extension
 
-To edit this repository in MakeCode.
 
-* open []()
-* click on **Import** then click on **Import URL**
-* paste **https://github.com/** and click import
+## Features
 
-#### Metadata (used for search, rendering)
+- BLE UART communication
+- Custom MB protocol
+- Command Router
+- Modular handlers
+- Servo control
+- Motor control
+- Android controller compatible
 
-* for PXT/
-<script src="https://makecode.com/gh-pages-embed.js"></script><script>makeCodeRender("{{ site.makecode.home_url }}", "{{ site.github.owner_name }}/{{ site.github.repository_name }}");</script>
 
 ## Version History
 
@@ -33,3 +38,6 @@ To edit this repository in MakeCode.
 - ACK response implemented
 - Android protocol compatible
 - Stable bidirectional BLE communication
+
+
+for PXT/microbit
