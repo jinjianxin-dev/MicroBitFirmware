@@ -87,11 +87,11 @@ namespace MBSystemHandler {
         let temp =
             input.temperature()
         
-           let light = 10
-        //input.lightLevel()
+           let light = 
+            input.lightLevel()
 
-        let sound = 22
-            //input.soundLevel()
+        let sound = 
+            input.soundLevel()
         
         let response =
             "TEMP="

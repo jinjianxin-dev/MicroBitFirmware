@@ -8,9 +8,18 @@
 /// <reference path="handlers/system.ts" />
 /// <reference path="communication/transport.ts" />
 /// <reference path="router/router.ts" />
+/// <reference path="router/router.ts" />
+/// <reference path="examples/ServoBasic.ts" />
+
+/**
+ * 当前测试：
+ * MBServo Example
+ */
+
+let iStop = false
 
 
-
+/*
 let response =
     MBResponse.ok(
         "TEST"
@@ -33,6 +42,7 @@ input.onButtonPressed(Button.B, function () {
     result
     )
 })
+    */
 
 
 bluetooth.startUartService()
@@ -47,21 +57,11 @@ bluetooth.onUartDataReceived(
         let result = MBParser.parse(command)
         MBRouter.handle(result)
 
-        /*
-
-        let res = new MBParser.Result(true, 'NUM', '1')
-        MBRouter.handle(res)
+       
+        //let res = new MBParser.Result(true, 'NUM', '1')
+        //MBRouter.handle(res)
         
-        //测试
-        //bluetooth.uartWriteLine( "show command:" + command)
-
-     
-        /*测试
-        if (result.valid) { 
-        bluetooth.uartWriteLine(  "show parse:" + result.type  )
-        }
-
-        */
+      
     }
 )
 

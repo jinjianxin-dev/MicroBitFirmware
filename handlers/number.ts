@@ -60,31 +60,44 @@ namespace MBNumberHandler {
 
     function number0():boolean{
         showNumber(0)
+       
         return true
      }
 
-    function number1():boolean{
+    function number1(): boolean{
+        iStop=false
         showNumber(1)
+        
+        MBExamples.servoBasic()
+        
         return true
     }
 
-    function number2():boolean{
+    function number2(): boolean{
+        iStop=true
         showNumber(2)
+        
         return true
     }
 
-    function number3():boolean{
-        showNumber(3)
+    function number3(): boolean{
+        iStop=false
+        showNumber(3)        
+        MBExamples.moveTo()
         return true
     }
 
-    function number4():boolean{
+    function number4(): boolean{
+        iStop=true
         showNumber(4)
+        MBServo.moveBy(MBEnums.ServoPort.S1,15)
         return true
     }
 
-    function number5():boolean{
+    function number5(): boolean{
+        iStop=true
         showNumber(5)
+        MBServo.moveBy(MBEnums.ServoPort.S1,-15)
         return true
     }
 

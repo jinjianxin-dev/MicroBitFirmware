@@ -1,8 +1,11 @@
 namespace MBBoard {
 
     /**
-     * Servo 接口
+     * Servo 接口对应的引脚
      */
-    export const SERVO1 = AnalogPin.P0
-    export const SERVO2 = AnalogPin.P1
+    export const ServoPins: AnalogPin[] = [
+        AnalogPin.P0,   // S1
+        AnalogPin.P1    // S2
+    ]
+
 }

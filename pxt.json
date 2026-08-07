@@ -25,7 +25,8 @@
         "core/MBBoard.ts",
         "core/MBEnums.ts",
         "devices/MBMotor.ts",
-        "devices/MBServo.ts"
+        "devices/MBServo.ts",
+        "examples/ServoBasic.ts"
     ],
     "testFiles": [
         "test.ts"
