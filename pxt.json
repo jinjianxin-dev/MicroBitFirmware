@@ -2,7 +2,6 @@
     "name": "microbit-controller",
     "version": "2.0.0",
     "description": "MicroBit BLE Controller Firmware",
-    "extension": true,
     "dependencies": {
         "core": "*",
         "bluetooth": "*",
@@ -35,6 +34,7 @@
     "supportedTargets": [
         "microbit"
     ],
+    "extension": true,
     "yotta": {
         "config": {
             "microbit-dal": {
