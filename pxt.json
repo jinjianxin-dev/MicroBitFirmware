@@ -26,6 +26,7 @@
         "core/MBEnums.ts",
         "devices/MBMotor.ts",
         "devices/MBServo.ts",
+        "devices/PCA9685.ts",
         "examples/ServoBasic.ts"
     ],
     "testFiles": [

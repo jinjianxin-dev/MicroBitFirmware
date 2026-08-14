@@ -10,6 +10,7 @@
 /// <reference path="router/router.ts" />
 /// <reference path="router/router.ts" />
 /// <reference path="examples/ServoBasic.ts" />
+/// <reference path="devices/PCA9685.ts" />
 
 /**
  * 当前测试：
@@ -44,6 +45,27 @@ input.onButtonPressed(Button.B, function () {
 })
     */
 
+input.onButtonPressed(Button.A, function () {
+    PCA9685.init()
+
+    PCA9685.setDuty(9, 0  )
+
+    basic.pause(2000)
+
+    //PCA9685.setLow(9)
+})
+
+input.onButtonPressed(Button.B, function () {
+   PCA9685.setLow(9)
+})
+
+input.onButtonPressed(Button.AB, function () {
+    //basic.showNumber(PCA9685.readReg(0xFE))
+    PCA9685.setDuty(0, 100)
+    //PCA9685.setDuty(1, 100)
+    //PCA9685.setDuty(2, 100)
+
+})
 
 bluetooth.startUartService()
 
