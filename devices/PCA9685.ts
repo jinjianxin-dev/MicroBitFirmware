@@ -17,7 +17,7 @@ namespace PCA9685 {
     //==================================================
 
     // 默认 I2C 地址
-    const ADDRESS = 0x41
+    const ADDRESS = 0x40
 
     // 内部振荡器频率
     const OSCILLATOR_FREQUENCY = 25000000
@@ -245,6 +245,9 @@ namespace PCA9685 {
             MODE2,
             mode2
         )
+
+        // 设置电机 PWM 频率
+        setFrequency(50)
     }
 
 
@@ -384,6 +387,77 @@ namespace PCA9685 {
         )
     }
 
+    //==================================================
+    // 设置 PWM 脉宽
+    //==================================================
+
+    /**
+     * 设置指定通道的 PWM 脉宽
+     *
+     * 单位：微秒
+     *
+     * 在 50Hz 下：
+     *
+     * 1000us ≈ 0°
+     * 1500us ≈ 90°
+     * 2000us ≈ 180°
+     *
+     * pulseUs: 0~20000
+     */
+    //% block="PCA9685 通道 %channel 脉宽 %pulseUs μs"
+    export function setPulse(
+        channel: number,
+        pulseUs: number
+    ): void {
+
+        // 检查通道
+        if (channel < 0 || channel > 15)
+            return
+
+        // 限制脉宽
+        if (pulseUs < 0)
+            pulseUs = 0
+
+        if (pulseUs > 20000)
+            pulseUs = 20000
+
+        // 50Hz：
+        // 一个周期 = 20000us
+        //
+        // PCA9685：
+        // 一个周期 = 4096 ticks
+        //
+        // ticks = pulseUs / 20000 × 4096
+
+        let ticks = Math.round(
+            pulseUs *
+            PWM_RESOLUTION /
+            20000
+        )
+
+        // 0us
+        if (ticks <= 0) {
+
+            setFullOff(channel)
+
+            return
+        }
+
+        // 达到一个完整周期
+        if (ticks >= PWM_RESOLUTION) {
+
+            setFullOn(channel)
+
+            return
+        }
+
+        basic.showNumber(ticks)
+        setPWM(
+            channel,
+            0,
+            ticks
+        )
+    }
 
     //==================================================
     // 设置 PWM 频率

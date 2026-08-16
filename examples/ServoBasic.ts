@@ -2,33 +2,30 @@ namespace MBExamples {
 
     export function servoBasic() {
 
+        PCA9685.init()
+
         basic.forever(function () {
 
-            if (!iStop) {
-                MBServo.resetAngle(MBEnums.ServoPort.S1)
+            PCA9685.setPulse(
+                4,
+                1000
+            )
 
-                basic.pause(1000)
+            basic.pause(2000)
 
-                MBServo.setAngle(
-                    MBEnums.ServoPort.S1,
-                    0
-                )
+            PCA9685.setPulse(
+                4,
+                1500
+            )
 
-                basic.pause(1000)
+            basic.pause(2000)
 
-                MBServo.setAngle(
-                    MBEnums.ServoPort.S1,
-                    180
-                )
-
-                basic.pause(1000)
-            } else {
-                return
-                
-            }
-
-        })
-
+            PCA9685.setPulse(
+                4,
+                2000
+            )
+        }
+        )
     }
 
     export function moveTo() {

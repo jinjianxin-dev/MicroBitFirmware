@@ -58,55 +58,65 @@ namespace MBNumberHandler {
 
     }
 
-    function number0():boolean{
+    function number0(): boolean{
+
         showNumber(0)
        
         return true
      }
 
     function number1(): boolean{
-        iStop=false
+        iStop = false
+        pins.analogWritePin(4,0)
+        pins.analogWritePin(5,0)
+ 
+   
         showNumber(1)
         
-        MBExamples.servoBasic()
+        //MBExamples.servoBasic()
         
         return true
     }
 
     function number2(): boolean{
-        iStop=true
+        iStop = false
+        //pins.analogWritePin(4,0)
+       //pins.analogWritePin(5,0)
+        //iStop=true
         showNumber(2)
         
         return true
     }
 
     function number3(): boolean{
-        iStop=false
+      
         showNumber(3)        
-        MBExamples.moveTo()
+    
         return true
     }
 
     function number4(): boolean{
+
         iStop=true
         showNumber(4)
-        MBServo.moveBy(MBEnums.ServoPort.S1,15)
+  
         return true
     }
 
     function number5(): boolean{
         iStop=true
         showNumber(5)
-        MBServo.moveBy(MBEnums.ServoPort.S1,-15)
         return true
     }
 
-    function number6():boolean{
+    function number6(): boolean{
+
         showNumber(6)
         return true
     }
 
-    function number7():boolean{
+    function number7(): boolean{
+        PCA9685.setDuty(0, 50)
         showNumber(7)
         return true
     }
@@ -116,7 +126,8 @@ namespace MBNumberHandler {
         return true
     }
 
-    function number9():boolean{
+    function number9(): boolean{
+        L298N.stop(0)
         showNumber(9)
         return true
     }

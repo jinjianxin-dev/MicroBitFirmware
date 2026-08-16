@@ -11,6 +11,7 @@
 /// <reference path="router/router.ts" />
 /// <reference path="examples/ServoBasic.ts" />
 /// <reference path="devices/PCA9685.ts" />
+/// <reference path="devices/L298N.ts" />
 
 /**
  * 当前测试：
@@ -19,7 +20,17 @@
 
 let iStop = false
 
+MBExamples.servoBasic()
 
+//PCA9685.setHigh(0)
+//PCA9685.setLow(1)
+
+//pins.analogWritePin(4, 1023)
+//pins.analogWritePin(5, 0)
+
+
+//MBMotor.init()
+//pins.digitalWritePin(DigitalPin.P4, 0);
 /*
 let response =
     MBResponse.ok(
@@ -46,17 +57,14 @@ input.onButtonPressed(Button.B, function () {
     */
 
 input.onButtonPressed(Button.A, function () {
-    PCA9685.init()
-
-    PCA9685.setDuty(9, 0  )
-
-    basic.pause(2000)
+   
+    L298N.forward(0,100)
 
     //PCA9685.setLow(9)
 })
 
 input.onButtonPressed(Button.B, function () {
-   PCA9685.setLow(9)
+   L298N.reverse(0,100)
 })
 
 input.onButtonPressed(Button.AB, function () {

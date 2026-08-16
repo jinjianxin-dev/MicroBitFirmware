@@ -23,6 +23,12 @@ namespace MBSystemHandler {
                 return version()
 
             case "INFO":
+                //L298N.stop(0)
+     
+                MBMotor.stop(
+                    MBMotor.Motor.B
+                )
+
                 basic.showString("I")
                 return info()
             
@@ -75,11 +81,12 @@ namespace MBSystemHandler {
 
     switch(value){
         case "INFO":
-            return  "FW=MB-V1.2.0;PROTO=1.2"
+  
+            return "FW=MB-V1.2.0;PROTO=1.2"
 
         default:
             return ""
-        }
+    }
     }
 
     function sensor(): boolean{

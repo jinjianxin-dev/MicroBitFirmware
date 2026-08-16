@@ -51,8 +51,8 @@ namespace MBDirectionHandler {
 
 
 
-    function down():boolean{
-
+    function down(): boolean{
+        //L298N.reverse(0,100)
         basic.showArrow(
             ArrowNames.South
         )
