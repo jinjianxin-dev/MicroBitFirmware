@@ -51,12 +51,12 @@ namespace L298N {
     //==================================================
 
     // Motor A
-    const MOTOR_A_IN1 = 4
-    const MOTOR_A_IN2 = 5
+    const MOTOR_A_IN1 = 8
+    const MOTOR_A_IN2 = 9
 
     // Motor B
-    const MOTOR_B_IN1 = 14
-    const MOTOR_B_IN2 = 15
+    const MOTOR_B_IN1 = 10
+    const MOTOR_B_IN2 = 11
 
 
     //==================================================

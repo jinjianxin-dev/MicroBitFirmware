@@ -12,6 +12,8 @@
 /// <reference path="examples/ServoBasic.ts" />
 /// <reference path="devices/PCA9685.ts" />
 /// <reference path="devices/L298N.ts" />
+/// <reference path="devices/MBPCA9685Servo.ts" />
+
 
 /**
  * 当前测试：
@@ -20,7 +22,19 @@
 
 let iStop = false
 
-MBExamples.servoBasic()
+MBPCA9685Servo.init()
+        
+input.onButtonPressed(Button.A, function () {
+    MBExamples.motoBasic()
+
+})
+        
+
+input.onButtonPressed(Button.B, function () {
+            //basic.showNumber(2)
+            MBPCA9685Servo.moveBy(4,30)
+        })
+
 
 //PCA9685.setHigh(0)
 //PCA9685.setLow(1)
@@ -56,24 +70,6 @@ input.onButtonPressed(Button.B, function () {
 })
     */
 
-input.onButtonPressed(Button.A, function () {
-   
-    L298N.forward(0,100)
-
-    //PCA9685.setLow(9)
-})
-
-input.onButtonPressed(Button.B, function () {
-   L298N.reverse(0,100)
-})
-
-input.onButtonPressed(Button.AB, function () {
-    //basic.showNumber(PCA9685.readReg(0xFE))
-    PCA9685.setDuty(0, 100)
-    //PCA9685.setDuty(1, 100)
-    //PCA9685.setDuty(2, 100)
-
-})
 
 bluetooth.startUartService()
 

@@ -66,11 +66,7 @@ namespace MBNumberHandler {
      }
 
     function number1(): boolean{
-        iStop = false
-        pins.analogWritePin(4,0)
-        pins.analogWritePin(5,0)
- 
-   
+        MBExamples.servoTest1()
         showNumber(1)
         
         //MBExamples.servoBasic()
@@ -79,17 +75,14 @@ namespace MBNumberHandler {
     }
 
     function number2(): boolean{
-        iStop = false
-        //pins.analogWritePin(4,0)
-       //pins.analogWritePin(5,0)
-        //iStop=true
+        MBExamples.servoTest2()
         showNumber(2)
         
         return true
     }
 
     function number3(): boolean{
-      
+        MBExamples.servoTest3()
         showNumber(3)        
     
         return true

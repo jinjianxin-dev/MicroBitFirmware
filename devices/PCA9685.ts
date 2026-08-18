@@ -451,7 +451,7 @@ namespace PCA9685 {
             return
         }
 
-        basic.showNumber(ticks)
+        
         setPWM(
             channel,
             0,
