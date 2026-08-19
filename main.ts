@@ -24,7 +24,13 @@ MBPCA9685Servo.init()
 
 MBPCA9685Servo.setMoveStep(1)
 MBPCA9685Servo.setMoveDelay(50)
- MBPCA9685Servo.setPulseRange(600,2000)
+
+MBPCA9685Servo.setPulseRange(4, 600, 2600)
+MBPCA9685Servo.setMaxAngle(4, 270)
+
+MBPCA9685Servo.setPulseRange(3, 600, 2600)
+MBPCA9685Servo.setMaxAngle(3, 180)
+
 MBPCA9685Servo.setAngle(4, 0)
 MBPCA9685Servo.setAngle(3, 0)
 

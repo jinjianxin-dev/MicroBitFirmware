@@ -69,7 +69,7 @@ namespace MBNumberHandler {
        // MBPCA9685Servo.init()
         MBPCA9685Servo.moveTo(3,180)
         MBPCA9685Servo.moveTo(4, 180)
-       
+        basic.showNumber(1)
        
         return true
     }
@@ -96,24 +96,28 @@ namespace MBNumberHandler {
     }
 
     function number5(): boolean {
-
+        MBPCA9685Servo.moveTo(4, 270)
         showNumber(5)
         return true
     }
 
     function number6(): boolean {
-
+        MBPCA9685Servo.pause(3)
+        MBPCA9685Servo.pause(4)
         showNumber(6)
         return true
     }
 
     function number7(): boolean {
-        PCA9685.setDuty(0, 50)
+        MBPCA9685Servo.resume(3)
+        MBPCA9685Servo.resume(4)
         showNumber(7)
         return true
     }
 
     function number8(): boolean {
+        MBPCA9685Servo.moveBy(3, 15)
+        MBPCA9685Servo.moveBy(4,15)
         showNumber(8)
         return true
     }
