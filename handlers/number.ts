@@ -15,9 +15,9 @@ namespace MBNumberHandler {
 
     export function execute(
         value: string
-    ):boolean {
+    ): boolean {
 
-        switch(value) {
+        switch (value) {
 
             case "0":
                 return number0()
@@ -58,68 +58,67 @@ namespace MBNumberHandler {
 
     }
 
-    function number0(): boolean{
+    function number0(): boolean {
 
         showNumber(0)
+
+        return true
+    }
+
+    function number1(): boolean {
+       // MBPCA9685Servo.init()
+        MBPCA9685Servo.moveTo(3,180)
+        MBPCA9685Servo.moveTo(4, 180)
+       
        
         return true
-     }
+    }
 
-    function number1(): boolean{
-        MBExamples.servoTest1()
-        showNumber(1)
-        
-        //MBExamples.servoBasic()
-        
+    function number2(): boolean {
+        MBPCA9685Servo.setAngle(4,90)
+        MBPCA9685Servo.setAngle(3,90)
+
         return true
     }
 
-    function number2(): boolean{
-        MBExamples.servoTest2()
-        showNumber(2)
-        
+    function number3(): boolean {
+        MBPCA9685Servo.setAngle(4,45)
+        MBPCA9685Servo.setAngle(3,45)
+
         return true
     }
 
-    function number3(): boolean{
-        MBExamples.servoTest3()
-        showNumber(3)        
-    
+    function number4(): boolean {
+        MBPCA9685Servo.setAngle(4, 0)
+        MBPCA9685Servo.setAngle(3, 0)
+
         return true
     }
 
-    function number4(): boolean{
+    function number5(): boolean {
 
-        iStop=true
-        showNumber(4)
-  
-        return true
-    }
-
-    function number5(): boolean{
-        iStop=true
         showNumber(5)
         return true
     }
 
-    function number6(): boolean{
+    function number6(): boolean {
 
         showNumber(6)
         return true
     }
 
-    function number7(): boolean{
+    function number7(): boolean {
         PCA9685.setDuty(0, 50)
         showNumber(7)
         return true
     }
 
-    function number8():boolean{
+    function number8(): boolean {
         showNumber(8)
         return true
     }
 
-    function number9(): boolean{
+    function number9(): boolean {
         L298N.stop(0)
         showNumber(9)
         return true
@@ -128,8 +127,8 @@ namespace MBNumberHandler {
 
 
     function showNumber(
-        value:number
-    ){
+        value: number
+    ) {
 
         basic.showNumber(
             value

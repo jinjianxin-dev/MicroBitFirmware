@@ -20,21 +20,13 @@
  * MBServo Example
  */
 
-let iStop = false
-
 MBPCA9685Servo.init()
-        
-input.onButtonPressed(Button.A, function () {
-    MBExamples.motoBasic()
 
-})
-        
-
-input.onButtonPressed(Button.B, function () {
-            //basic.showNumber(2)
-            MBPCA9685Servo.moveBy(4,30)
-        })
-
+MBPCA9685Servo.setMoveStep(1)
+MBPCA9685Servo.setMoveDelay(50)
+ MBPCA9685Servo.setPulseRange(600,2000)
+MBPCA9685Servo.setAngle(4, 0)
+MBPCA9685Servo.setAngle(3, 0)
 
 //PCA9685.setHigh(0)
 //PCA9685.setLow(1)
