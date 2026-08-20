@@ -1,7 +1,7 @@
 /**
  * 电机控制
  *
- * MBMotor 是面向 MakeCode 用户的电机控制接口。
+ * MBMotor 是面向 MakeCode 用户的基础电机控制接口。
  *
  * 底层硬件：
  *
@@ -11,39 +11,36 @@
  *    ↓
  * PCA9685
  *    ↓
- * L298N
- *    ↓
  * Motor
+ *
+ * 轮子编号：
+ *
+ *   0 = 左轮
+ *   1 = 右轮
+ *
+ * MBMotor 只负责单个轮子的速度控制。
+ * 小车前进、后退、转向等组合运动，
+ * 由上层 MBCar 负责。
  */
 
 //% color=#E91E63 icon="\uf1b9" weight=80
 namespace MBMotor {
 
     //==================================================
-    // 电机编号
-    //==================================================
-
-    /**
-     * 电机编号
-     */
-    export enum Motor {
-        A = 0,
-        B = 1
-    }
-
-
-    //==================================================
     // 当前速度
     //==================================================
 
     /**
-     * 保存当前电机速度
+     * 当前轮子速度
      *
      * -100 ~ 100
      *
      * 正数：正转
      * 负数：反转
      * 0：停止
+     *
+     * 0 = 左轮
+     * 1 = 右轮
      */
     let motorSpeed: number[] = [
         0,
@@ -63,8 +60,8 @@ namespace MBMotor {
 
         L298N.init()
 
-        motorSpeed[Motor.A] = 0
-        motorSpeed[Motor.B] = 0
+        motorSpeed[0] = 0
+        motorSpeed[1] = 0
     }
 
 
@@ -73,25 +70,28 @@ namespace MBMotor {
     //==================================================
 
     /**
-     * 设置电机速度
+     * 设置轮子速度
      *
-     * speed:
+     * motor：
      *
-     *  0 ~ 100  → 正转
-     * -1 ~ -100 → 反转
-     *  0        → 停止
+     * 0 = 左轮
+     * 1 = 右轮
+     *
+     * speed：
+     *
+     * 0 ~ 100   正转
+     * -1 ~ -100 反转
+     * 0         停止
      */
-    //% block="设置电机 %motor 速度为 %speed %%"
+    //% block="设置轮子 %motor 速度为 %speed %%"
+    //% motor.min=0 motor.max=1
+    //% motor.defl=0
     //% speed.min=-100 speed.max=100
     //% speed.defl=50
     export function setSpeed(
-        motor: Motor,
+        motor: number,
         speed: number
     ): void {
-
-        //==================================================
-        // 限制速度范围
-        //==================================================
 
         if (speed > 100)
             speed = 100
@@ -100,16 +100,8 @@ namespace MBMotor {
             speed = -100
 
 
-        //==================================================
-        // 保存当前速度
-        //==================================================
-
         motorSpeed[motor] = speed
 
-
-        //==================================================
-        // 发送给 L298N
-        //==================================================
 
         L298N.setSpeed(
             motor,
@@ -123,14 +115,13 @@ namespace MBMotor {
     //==================================================
 
     /**
-     * 获取电机当前速度
+     * 获取轮子当前速度
      *
-     * 正数：正转
-     * 负数：反转
-     * 0：停止
+     * 0 = 左轮
+     * 1 = 右轮
      */
     export function getSpeed(
-        motor: Motor
+        motor: number
     ): number {
 
         return motorSpeed[motor]
@@ -142,11 +133,13 @@ namespace MBMotor {
     //==================================================
 
     /**
-     * 停止电机
+     * 停止轮子
      */
-    //% block="停止电机 %motor"
+    //% block="停止轮子 %motor"
+    //% motor.min=0 motor.max=1
+    //% motor.defl=0
     export function stop(
-        motor: Motor
+        motor: number
     ): void {
 
         motorSpeed[motor] = 0
@@ -162,13 +155,13 @@ namespace MBMotor {
     //==================================================
 
     /**
-     * 电机正转
-     *
-     * 默认速度：50%
+     * 轮子全速正转
      */
-    //% block="电机 %motor 正转"
+    //% block="轮子 %motor 全速正转"
+    //% motor.min=0 motor.max=1
+    //% motor.defl=0
     export function forward(
-        motor: Motor
+        motor: number
     ): void {
 
         setSpeed(
@@ -183,13 +176,13 @@ namespace MBMotor {
     //==================================================
 
     /**
-     * 电机反转
-     *
-     * 默认速度：50%
+     * 轮子全速反转
      */
-    //% block="电机 %motor 反转"
+    //% block="轮子 %motor 全速反转"
+    //% motor.min=0 motor.max=1
+    //% motor.defl=0
     export function reverse(
-        motor: Motor
+        motor: number
     ): void {
 
         setSpeed(
@@ -204,11 +197,13 @@ namespace MBMotor {
     //==================================================
 
     /**
-     * 电机主动刹车
+     * 轮子主动刹车
      */
-    //% block="刹车电机 %motor"
+    //% block="刹车轮子 %motor"
+    //% motor.min=0 motor.max=1
+    //% motor.defl=0
     export function brake(
-        motor: Motor
+        motor: number
     ): void {
 
         motorSpeed[motor] = 0

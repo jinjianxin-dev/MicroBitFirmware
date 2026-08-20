@@ -24,10 +24,6 @@ namespace MBSystemHandler {
 
             case "INFO":
                 //L298N.stop(0)
-     
-                MBMotor.stop(
-                    MBMotor.Motor.B
-                )
 
                 basic.showString("I")
                 return info()
