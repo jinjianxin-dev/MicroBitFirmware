@@ -34,7 +34,8 @@ namespace MBRouter {
             "start MBRouter.handle:" + result.type
         )
 
-        switch(result.type){
+        switch (result.type) {
+            /*
             case "BTN":
 
                 success = MBButtonHandler.execute(
@@ -56,7 +57,8 @@ namespace MBRouter {
                 }
 
                 break
-
+                */
+            
             case "DIR":
                 success = MBDirectionHandler.execute(
                     result.value

@@ -165,6 +165,21 @@ namespace MBPCA9685Servo {
         paused[channel] = false
     }
 
+    //==================================================
+    // 停止全部运动
+    //==================================================
+
+    /**
+     * 停止全部 PCA9685 舵机运动
+     */
+    //% block="停止全部 PCA9685 舵机运动"
+    export function stopAll(): void {
+
+        for (let i = 0; i < CHANNEL_COUNT; i++) {
+
+            stop(i)
+        }
+    }
 
     //==================================================
     // 暂停运动
@@ -196,6 +211,26 @@ namespace MBPCA9685Servo {
 
 
     //==================================================
+    // 暂停全部运动
+    //==================================================
+
+    /**
+     * 暂停全部舵机运动
+     */
+    //% block="暂停全部 PCA9685 舵机运动"
+    export function pauseAll(): void {
+
+        for (let i = 0; i < CHANNEL_COUNT; i++) {
+
+            if (moving[i]) {
+
+                paused[i] = true
+            }
+        }
+    }
+
+
+    //==================================================
     // 继续运动
     //==================================================
 
@@ -214,6 +249,56 @@ namespace MBPCA9685Servo {
             return
 
         paused[channel] = false
+    }
+
+    //==================================================
+    // 继续全部运动
+    //==================================================
+
+    /**
+     * 继续全部舵机运动
+     */
+    //% block="继续全部 PCA9685 舵机运动"
+    export function resumeAll(): void {
+
+        for (let i = 0; i < CHANNEL_COUNT; i++) {
+
+            paused[i] = false
+        }
+    }
+
+    //==================================================
+// 查询运动状态
+//==================================================
+
+/**
+ * 判断指定通道舵机是否正在运动
+ */
+//% block="PCA9685 舵机通道 %channel 是否正在运动"
+//% channel.min=0 channel.max=15
+export function isMoving(
+    channel: number
+): boolean {
+
+    if (channel < 0 || channel >= CHANNEL_COUNT)
+        return false
+
+    return moving[channel]
+}
+
+    /**
+     * 判断指定通道舵机是否暂停
+     */
+    //% block="PCA9685 舵机通道 %channel 是否暂停"
+    //% channel.min=0 channel.max=15
+    export function isPaused(
+        channel: number
+    ): boolean {
+
+        if (channel < 0 || channel >= CHANNEL_COUNT)
+            return false
+
+        return paused[channel]
     }
 
 
@@ -388,6 +473,26 @@ namespace MBPCA9685Servo {
 
 
     //==================================================
+    // 最大角度
+    //==================================================
+
+    /**
+     * 获取指定通道最大角度
+     */
+    //% block="PCA9685 舵机通道 %channel 最大角度"
+    //% channel.min=0 channel.max=15
+    export function getMaxAngle(
+        channel: number
+    ): number {
+
+        if (channel < 0 || channel >= CHANNEL_COUNT)
+            return DEFAULT_MAX_ANGLE
+
+        return maxAngle[channel]
+    }
+
+
+    //==================================================
     // 设置脉宽范围
     //==================================================
 
@@ -442,6 +547,40 @@ namespace MBPCA9685Servo {
 
         maxPulse[channel] =
             maxPulseUs
+    }
+
+    //==================================================
+    // 获取脉宽参数
+    //==================================================
+
+    /**
+     * 获取指定通道最小脉宽
+     */
+    //% block="PCA9685 舵机通道 %channel 最小脉宽"
+    //% channel.min=0 channel.max=15
+    export function getMinPulse(
+        channel: number
+    ): number {
+
+        if (channel < 0 || channel >= CHANNEL_COUNT)
+            return DEFAULT_MIN_PULSE
+
+        return minPulse[channel]
+    }
+
+    /**
+     * 获取指定通道最大脉宽
+     */
+    //% block="PCA9685 舵机通道 %channel 最大脉宽"
+    //% channel.min=0 channel.max=15
+    export function getMaxPulse(
+        channel: number
+    ): number {
+
+        if (channel < 0 || channel >= CHANNEL_COUNT)
+            return DEFAULT_MAX_PULSE
+
+        return maxPulse[channel]
     }
 
 
@@ -530,6 +669,50 @@ namespace MBPCA9685Servo {
 
         moving[channel] = false
         paused[channel] = false
+    }
+
+    //==================================================
+    // 当前角度
+    //==================================================
+
+    /**
+     * 获取指定通道当前角度
+     *
+     * 返回：
+     * 当前软件记录的实际角度
+     */
+    //% block="PCA9685 舵机通道 %channel 当前角度"
+    //% channel.min=0 channel.max=15
+    export function getAngle(
+        channel: number
+    ): number {
+
+        if (channel < 0 || channel >= CHANNEL_COUNT)
+            return 0
+
+        return currentAngle[channel]
+    }
+
+    //==================================================
+    // 目标角度
+    //==================================================
+
+    /**
+     * 获取指定通道目标角度
+     *
+     * 返回：
+     * moveTo() 当前目标角度
+     */
+    //% block="PCA9685 舵机通道 %channel 目标角度"
+    //% channel.min=0 channel.max=15
+    export function getTargetAngle(
+        channel: number
+    ): number {
+
+        if (channel < 0 || channel >= CHANNEL_COUNT)
+            return 0
+
+        return targetAngle[channel]
     }
 
 
@@ -675,6 +858,159 @@ namespace MBPCA9685Servo {
         })
     }
 
+    //==================================================
+    // 两舵机同步移动
+    //==================================================
+
+    /**
+     * 两个舵机同步移动到目标角度
+     *
+     * 两个舵机会同时开始，
+     * 同时结束。
+     */
+    //% block="同步移动 舵机%ch1 到%angle1° 舵机%ch2 到%angle2°"
+    //% inlineInputMode=inline
+    export function moveToSync2(
+        ch1: number,
+        angle1: number,
+        ch2: number,
+        angle2: number
+    ): void {
+
+        if (ch1 < 0 || ch1 >= CHANNEL_COUNT)
+            return
+
+        if (ch2 < 0 || ch2 >= CHANNEL_COUNT)
+            return
+
+        angle1 = clampAngle(ch1, angle1)
+        angle2 = clampAngle(ch2, angle2)
+
+        let d1 = Math.abs(angle1 - currentAngle[ch1])
+        let d2 = Math.abs(angle2 - currentAngle[ch2])
+
+        let maxDistance = Math.max(d1, d2)
+
+        if (maxDistance == 0)
+            return
+
+        let steps = Math.ceil(maxDistance / moveStep)
+
+        control.runInBackground(function () {
+
+            let p1 = currentAngle[ch1]
+            let p2 = currentAngle[ch2]
+
+            let step1 = (angle1 - p1) / steps
+            let step2 = (angle2 - p2) / steps
+
+            moving[ch1] = true
+            moving[ch2] = true
+
+            paused[ch1] = false
+            paused[ch2] = false
+
+            for (let i = 0; i < steps; i++) {
+
+                while (paused[ch1] || paused[ch2]) {
+
+                    basic.pause(10)
+                }
+
+                p1 += step1
+                p2 += step2
+
+                applyAngle(ch1, Math.round(p1))
+                applyAngle(ch2, Math.round(p2))
+
+                basic.pause(moveDelay)
+            }
+
+            applyAngle(ch1, angle1)
+            applyAngle(ch2, angle2)
+
+            moving[ch1] = false
+            moving[ch2] = false
+        })
+    }
+
+
+    //==================================================
+    // 四舵机同步移动
+    //==================================================
+
+    /**
+     * 四个舵机同步移动
+     */
+    //% block="同步移动4个舵机"
+    //% expandableArgumentMode=enabled
+    export function moveToSync4(
+        ch1: number, angle1: number,
+        ch2: number, angle2: number,
+        ch3: number, angle3: number,
+        ch4: number, angle4: number
+    ): void {
+
+        moveToSync2(ch1, angle1, ch2, angle2)
+        moveToSync2(ch3, angle3, ch4, angle4)
+
+        wait(ch1)
+        wait(ch3)
+    }
+
+    //==================================================
+    // 等待运动完成
+    //==================================================
+
+    /**
+     * 等待指定通道舵机运动完成
+     *
+     * 注意：
+     * 这是阻塞函数。
+     * 常用于多个动作顺序执行。
+     */
+    //% block="等待 PCA9685 舵机通道 %channel 完成运动"
+    //% channel.min=0 channel.max=15
+    export function wait(
+        channel: number
+    ): void {
+
+        if (channel < 0 || channel >= CHANNEL_COUNT)
+            return
+
+        while (moving[channel]) {
+            basic.pause(10)
+        }
+    }
+
+    //==================================================
+    // 等待全部完成
+    //==================================================
+
+    /**
+     * 等待全部舵机完成运动
+     */
+    //% block="等待全部 PCA9685 舵机完成运动"
+    export function waitAll(): void {
+
+        let busy = true
+
+        while (busy) {
+
+            busy = false
+
+            for (let i = 0; i < CHANNEL_COUNT; i++) {
+
+                if (moving[i]) {
+
+                    busy = true
+                    break
+                }
+            }
+
+            basic.pause(10)
+        }
+    }
 
     //==================================================
     // 相对移动

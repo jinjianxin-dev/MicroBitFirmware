@@ -18,7 +18,7 @@ namespace MBServo {
     //% angle.min=0 angle.max=180
     //% angle.defl=90
     export function setAngle(
-        port: MBEnums.ServoPort,
+        port: number,
         angle: number
     ): void {
 
@@ -26,7 +26,7 @@ namespace MBServo {
         if (angle > 180) angle = 180
 
         pins.servoWritePin(
-            MBBoard.ServoPins[port],
+            port,
             angle
         )
 
@@ -57,7 +57,7 @@ namespace MBServo {
      */
     //% block="舵机 %port 回中"
     export function resetAngle(
-        port: MBEnums.ServoPort
+        port: number
     ): void {
 
         setAngle(port,90)
@@ -69,7 +69,7 @@ namespace MBServo {
      */
     //% block="停止舵机 %port"
     export function stop(
-        port: MBEnums.ServoPort
+        port: number
     ): void {
 
     }
@@ -82,7 +82,7 @@ namespace MBServo {
     //% angle.defl=90
     //% duration.defl=1000
     export function moveTo(
-        port: MBEnums.ServoPort,
+        port: number,
         angle: number,
         duration: number
     ): void {

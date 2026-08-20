@@ -66,24 +66,21 @@ namespace MBNumberHandler {
     }
 
     function number1(): boolean {
-       // MBPCA9685Servo.init()
-        MBPCA9685Servo.moveTo(3,180)
-        MBPCA9685Servo.moveTo(4, 180)
-        basic.showNumber(1)
-       
+        MBPCA9685Servo.moveToSync2(
+            0, 180,
+            1, 90
+        )
         return true
     }
 
     function number2(): boolean {
-        MBPCA9685Servo.setAngle(4,90)
-        MBPCA9685Servo.setAngle(3,90)
+         MBPCA9685Servo.pauseAll()
 
         return true
     }
 
     function number3(): boolean {
-        MBPCA9685Servo.setAngle(4,45)
-        MBPCA9685Servo.setAngle(3,45)
+        MBPCA9685Servo.resumeAll()
 
         return true
     }
@@ -96,17 +93,37 @@ namespace MBNumberHandler {
     }
 
     function number5(): boolean {
-        MBPCA9685Servo.moveTo(4, 270)
-        showNumber(5)
+
+        MBPCA9685Servo.setMaxAngle(0, 270)
+        MBPCA9685Servo.setPulseRange(0, 600, 2400)
+
+        MBPCA9685Servo.setAngle(0, 30)
+
+        basic.showNumber(MBPCA9685Servo.getAngle(0))
+        basic.pause(1000)
+
+        MBPCA9685Servo.moveTo(0, 180)
+
+        basic.showNumber(MBPCA9685Servo.getTargetAngle(0))
         return true
     }
 
     function number6(): boolean {
-        MBPCA9685Servo.pause(3)
-        MBPCA9685Servo.pause(4)
-        showNumber(6)
-        return true
-    }
+
+        MBPCA9685Servo.moveTo(3, 270)
+
+            basic.forever(function () {
+
+                if (MBPCA9685Servo.isMoving(3)) {
+                    basic.showIcon(IconNames.Yes)
+                } else {
+                    basic.showIcon(IconNames.No)
+                }
+
+            })
+
+            return true
+        }
 
     function number7(): boolean {
         MBPCA9685Servo.resume(3)

@@ -53,6 +53,8 @@ namespace MBDirectionHandler {
 
     function down(): boolean{
         //L298N.reverse(0,100)
+        MBPCA9685Servo.center(3)
+        MBPCA9685Servo.center(4)
         basic.showArrow(
             ArrowNames.South
         )
@@ -74,7 +76,7 @@ namespace MBDirectionHandler {
     function right():boolean{
 
         basic.showArrow(
-            ArrowNames.East
+            ArrowNames.NorthWest
         )
         return true
     }
