@@ -24,8 +24,7 @@
         "devices/MBServo.ts",
         "devices/PCA9685.ts",
         "devices/L298N.ts",
-        "devices/MBPCA9685Servo.ts",
-        "examples/ServoBasic.ts"
+        "devices/MBPCA9685Servo.ts"
     ],
     "testFiles": [
         "test.ts"

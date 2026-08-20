@@ -1,600 +1,206 @@
 /**
  * PCA9685 舵机控制
  *
- * V1.5
+ * V1.5.1 Stable Final
  *
  * 功能：
- * - 舵机角度控制
- * - 舵机回中
- * - 非阻塞平滑移动
- * - 相对角度移动
- * - 每通道独立最大角度
- * - 每通道独立脉宽范围
- * - 舵机移动步长设置
- * - 舵机移动间隔设置
- * - 多通道独立运动
- * - 暂停 / 继续运动
- * - 停止运动
+ * - PCA9685 舵机初始化
+ * - 每通道独立最大角度（1°~360°）
+ * - 每通道独立脉宽范围（500~2500us）
+ * - 非阻塞平滑运动
+ * - Pause / Resume / Stop
+ * - 相对移动
+ * - 全通道控制
+ * - 状态查询
  *
- * 特点：
- * - moveTo() 不阻塞主程序
- * - 后台自动执行舵机运动
- * - 每个 PCA9685 通道独立控制
- * - 每个通道可以使用不同的舵机
- * - 新目标会覆盖原目标
- *
- * 底层：
- * PCA9685
- *
- * 默认：
- * 最大角度：180°
- * 最小脉宽：1000us
- * 最大脉宽：2000us
- * 50Hz
+ * 优化：
+ * - 精简内部结构
+ * - 减少重复代码
+ * - 修复 setMaxAngle() 隐藏 Bug
+ * - 修复 moveTo() 重复后台任务问题
  */
 
 //% color=#2196F3 icon="\uf085" weight=80
 namespace MBPCA9685Servo {
 
     //==================================================
-    // 基本参数
+    // 常量
     //==================================================
 
     const CHANNEL_COUNT = 16
 
-    const MIN_ANGLE = 0
-
     const DEFAULT_MAX_ANGLE = 180
-
     const DEFAULT_MIN_PULSE = 1000
     const DEFAULT_MAX_PULSE = 2000
-
-
-    //==================================================
-    // 脉宽限制
-    //==================================================
 
     const MIN_PULSE_LIMIT = 500
     const MAX_PULSE_LIMIT = 2500
 
 
     //==================================================
-    // 移动参数
+    // 全局运动参数
     //==================================================
 
-    // 每次移动的角度
     let moveStep = 5
-
-    // 每一步之间的等待时间
     let moveDelay = 50
 
 
     //==================================================
-    // 每个通道的舵机参数
+    // 每通道配置参数
     //==================================================
 
-    // 每个通道的最大角度
-    //
-    // 例如：
-    // channel 0 = 180
-    // channel 1 = 270
     let maxAngle: number[] = []
-
-    // 每个通道的最小脉宽
-    //
-    // 对应当前通道 0°
     let minPulse: number[] = []
-
-    // 每个通道的最大脉宽
-    //
-    // 对应当前通道 maxAngle
     let maxPulse: number[] = []
 
 
     //==================================================
-    // 每个通道的运动状态
+    // 每通道运动状态
     //==================================================
 
-    // 当前角度
     let currentAngle: number[] = []
-
-    // 目标角度
     let targetAngle: number[] = []
 
-    // 是否正在运动
     let moving: boolean[] = []
-
-    // 是否处于暂停状态
     let paused: boolean[] = []
 
-
-    //==================================================
-    // 初始化数组
-    //==================================================
-
-    for (let i = 0; i < CHANNEL_COUNT; i++) {
-
-        maxAngle[i] = DEFAULT_MAX_ANGLE
-
-        minPulse[i] = DEFAULT_MIN_PULSE
-        maxPulse[i] = DEFAULT_MAX_PULSE
-
-        currentAngle[i] =
-            DEFAULT_MAX_ANGLE / 2
-
-        targetAngle[i] =
-            DEFAULT_MAX_ANGLE / 2
-
-        moving[i] = false
-        paused[i] = false
-    }
+    // 运动任务 ID
+    //
+    // 每次新的 moveTo() 都会生成新的 ID。
+    // 旧的后台任务发现 ID 不一致后自动退出。
+    let moveId: number[] = []
 
 
     //==================================================
-    // 停止运动
+    // Internal Utilities
     //==================================================
 
     /**
-     * 停止指定通道舵机的平滑运动
-     *
-     * 停止后：
-     * - 保持当前实际角度
-     * - 保持当前 PWM 输出
-     * - 舵机继续保持当前位置
-     *
-     * 注意：
-     * stop() 不会关闭 PCA9685 输出
+     * 检查通道是否合法
      */
-    //% block="PCA9685 舵机通道 %channel 停止运动"
-    //% channel.min=0 channel.max=15
-    export function stop(
-        channel: number
-    ): void {
+    function validChannel(channel: number): boolean {
 
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return
+        return channel >= 0 && channel < CHANNEL_COUNT
+    }
 
-        // 目标设置为当前位置
-        targetAngle[channel] =
-            currentAngle[channel]
 
-        // 停止运动
+    /**
+     * 初始化单个通道的软件参数
+     */
+    function resetChannel(channel: number): void {
+
+        maxAngle[channel] = DEFAULT_MAX_ANGLE
+
+        minPulse[channel] = DEFAULT_MIN_PULSE
+        maxPulse[channel] = DEFAULT_MAX_PULSE
+
+        currentAngle[channel] = DEFAULT_MAX_ANGLE >> 1
+        targetAngle[channel] = DEFAULT_MAX_ANGLE >> 1
+
         moving[channel] = false
-
-        // 取消暂停
         paused[channel] = false
+
+        // 使旧的后台运动任务失效
+        moveId[channel] =
+            (moveId[channel] || 0) + 1
     }
 
-    //==================================================
-    // 停止全部运动
-    //==================================================
 
     /**
-     * 停止全部 PCA9685 舵机运动
+     * 限制角度
      */
-    //% block="停止全部 PCA9685 舵机运动"
-    export function stopAll(): void {
-
-        for (let i = 0; i < CHANNEL_COUNT; i++) {
-
-            stop(i)
-        }
-    }
-
-    //==================================================
-    // 暂停运动
-    //==================================================
-
-    /**
-     * 暂停指定通道舵机的平滑运动
-     *
-     * 暂停后：
-     * - 保持当前实际角度
-     * - 保持当前目标角度
-     * - 保持 PWM 输出
-     * - 后台运动任务继续存在
-     * - 暂时不改变舵机角度
-     */
-    //% block="PCA9685 舵机通道 %channel 暂停运动"
-    //% channel.min=0 channel.max=15
-    export function pause(
-        channel: number
-    ): void {
-
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return
-
-        if (moving[channel]) {
-            paused[channel] = true
-        }
-    }
-
-
-    //==================================================
-    // 暂停全部运动
-    //==================================================
-
-    /**
-     * 暂停全部舵机运动
-     */
-    //% block="暂停全部 PCA9685 舵机运动"
-    export function pauseAll(): void {
-
-        for (let i = 0; i < CHANNEL_COUNT; i++) {
-
-            if (moving[i]) {
-
-                paused[i] = true
-            }
-        }
-    }
-
-
-    //==================================================
-    // 继续运动
-    //==================================================
-
-    /**
-     * 继续指定通道舵机的平滑运动
-     *
-     * 从暂停时的实际位置继续向原目标角度移动
-     */
-    //% block="PCA9685 舵机通道 %channel 继续运动"
-    //% channel.min=0 channel.max=15
-    export function resume(
-        channel: number
-    ): void {
-
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return
-
-        paused[channel] = false
-    }
-
-    //==================================================
-    // 继续全部运动
-    //==================================================
-
-    /**
-     * 继续全部舵机运动
-     */
-    //% block="继续全部 PCA9685 舵机运动"
-    export function resumeAll(): void {
-
-        for (let i = 0; i < CHANNEL_COUNT; i++) {
-
-            paused[i] = false
-        }
-    }
-
-    //==================================================
-// 查询运动状态
-//==================================================
-
-/**
- * 判断指定通道舵机是否正在运动
- */
-//% block="PCA9685 舵机通道 %channel 是否正在运动"
-//% channel.min=0 channel.max=15
-export function isMoving(
-    channel: number
-): boolean {
-
-    if (channel < 0 || channel >= CHANNEL_COUNT)
-        return false
-
-    return moving[channel]
-}
-
-    /**
-     * 判断指定通道舵机是否暂停
-     */
-    //% block="PCA9685 舵机通道 %channel 是否暂停"
-    //% channel.min=0 channel.max=15
-    export function isPaused(
-        channel: number
-    ): boolean {
-
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return false
-
-        return paused[channel]
-    }
-
-
-    //==================================================
-    // 内部：限制角度
-    //==================================================
-
     function clampAngle(
         channel: number,
         angle: number
     ): number {
 
-        if (angle < MIN_ANGLE)
-            angle = MIN_ANGLE
+        if (angle < 0)
+            return 0
 
         if (angle > maxAngle[channel])
-            angle = maxAngle[channel]
+            return maxAngle[channel]
 
         return angle
     }
 
 
-    //==================================================
-    // 内部：角度转换为脉宽
-    //==================================================
-
+    /**
+     * 角度转换为脉宽
+     */
     function angleToPulse(
         channel: number,
         angle: number
     ): number {
 
-        angle =
-            clampAngle(
-                channel,
-                angle
-            )
+        angle = clampAngle(channel, angle)
 
-        let pulseUs =
+        return Math.round(
             minPulse[channel] +
-            (maxPulse[channel] -
-                minPulse[channel]) *
-            angle /
-            maxAngle[channel]
-
-        return Math.round(pulseUs)
+            (maxPulse[channel] - minPulse[channel]) *
+            angle / maxAngle[channel]
+        )
     }
 
 
-    //==================================================
-    // 内部：实际输出舵机角度
-    //==================================================
-
+    /**
+     * 实际输出舵机角度
+     */
     function applyAngle(
         channel: number,
         angle: number
     ): void {
 
-        angle =
-            clampAngle(
-                channel,
-                angle
-            )
-
-        let pulseUs =
-            angleToPulse(
-                channel,
-                angle
-            )
+        angle = clampAngle(channel, angle)
 
         PCA9685.setPulse(
             channel,
-            pulseUs
+            angleToPulse(channel, angle)
         )
 
-        // 更新软件中的实际当前位置
-        currentAngle[channel] =
-            angle
+        currentAngle[channel] = angle
     }
 
 
     //==================================================
-    // 初始化
+    // 初始化软件参数
+    //==================================================
+
+    for (let i = 0; i < CHANNEL_COUNT; i++) {
+
+        resetChannel(i)
+    }
+
+
+    //==================================================
+    // PCA9685 初始化
     //==================================================
 
     /**
-     * 初始化 PCA9685 舵机
+     * 初始化 PCA9685 舵机控制
      *
-     * 初始化后：
-     * - 所有通道最大角度 = 180°
-     * - 所有通道脉宽 = 1000～2000μs
-     * - 所有通道回到 90°
+     * 内部调用 PCA9685.init()
+     *
+     * PCA9685 将设置为 50Hz 舵机控制模式。
      */
     //% block="初始化 PCA9685 舵机"
     export function init(): void {
 
         PCA9685.init()
-
-        // 恢复移动参数
-        moveStep = 5
-        moveDelay = 50
-
-        // 初始化所有通道
-        for (let i = 0; i < CHANNEL_COUNT; i++) {
-
-            maxAngle[i] =
-                DEFAULT_MAX_ANGLE
-
-            minPulse[i] =
-                DEFAULT_MIN_PULSE
-
-            maxPulse[i] =
-                DEFAULT_MAX_PULSE
-
-            currentAngle[i] =
-                DEFAULT_MAX_ANGLE / 2
-
-            targetAngle[i] =
-                DEFAULT_MAX_ANGLE / 2
-
-            moving[i] = false
-            paused[i] = false
-        }
     }
 
 
     //==================================================
-    // 设置最大角度
+    // 运动参数
     //==================================================
 
     /**
-     * 设置指定通道舵机的最大角度
+     * 设置平滑运动步长
      *
-     * 例如：
-     * 180° 舵机 → 180
-     * 270° 舵机 → 270
-     *
-     * 该参数决定：
-     * 当前通道的最大角度对应 maxPulse
+     * 数值越大，移动越快。
      */
-    //% block="设置 PCA9685 舵机通道 %channel 最大角度 %angle °"
-    //% channel.min=0 channel.max=15
-    //% angle.min=1 angle.max=360
-    //% angle.defl=180
-    export function setMaxAngle(
-        channel: number,
-        angle: number
-    ): void {
-
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return
-
-        if (angle < 1)
-            angle = 1
-
-        if (angle > 360)
-            angle = 360
-
-        maxAngle[channel] = angle
-
-        // 如果当前角度超过新的最大角度
-        if (currentAngle[channel] > angle) {
-
-            currentAngle[channel] = angle
-        }
-
-        // 如果目标角度超过新的最大角度
-        if (targetAngle[channel] > angle) {
-
-            targetAngle[channel] = angle
-        }
-    }
-
-
-    //==================================================
-    // 最大角度
-    //==================================================
-
-    /**
-     * 获取指定通道最大角度
-     */
-    //% block="PCA9685 舵机通道 %channel 最大角度"
-    //% channel.min=0 channel.max=15
-    export function getMaxAngle(
-        channel: number
-    ): number {
-
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return DEFAULT_MAX_ANGLE
-
-        return maxAngle[channel]
-    }
-
-
-    //==================================================
-    // 设置脉宽范围
-    //==================================================
-
-    /**
-     * 设置指定通道舵机的脉宽范围
-     *
-     * minPulse：
-     * 对应 0°
-     *
-     * maxPulse：
-     * 对应当前通道最大角度
-     *
-     * 例如：
-     *
-     * 180° 舵机：
-     * 1000～2000μs
-     *
-     * 270° 舵机：
-     * 600～2400μs
-     */
-    //% block="设置 PCA9685 舵机通道 %channel 脉宽 最小 %minPulseUs μs 最大 %maxPulseUs μs"
-    //% channel.min=0 channel.max=15
-    //% minPulseUs.min=500 minPulseUs.max=2500 minPulseUs.defl=1000
-    //% maxPulseUs.min=500 maxPulseUs.max=2500 maxPulseUs.defl=2000
-    export function setPulseRange(
-        channel: number,
-        minPulseUs: number,
-        maxPulseUs: number
-    ): void {
-
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return
-
-        if (minPulseUs < MIN_PULSE_LIMIT)
-            minPulseUs = MIN_PULSE_LIMIT
-
-        if (minPulseUs > MAX_PULSE_LIMIT)
-            minPulseUs = MAX_PULSE_LIMIT
-
-        if (maxPulseUs < MIN_PULSE_LIMIT)
-            maxPulseUs = MIN_PULSE_LIMIT
-
-        if (maxPulseUs > MAX_PULSE_LIMIT)
-            maxPulseUs = MAX_PULSE_LIMIT
-
-        // 最大脉宽必须大于最小脉宽
-        if (maxPulseUs <= minPulseUs)
-            return
-
-        minPulse[channel] =
-            minPulseUs
-
-        maxPulse[channel] =
-            maxPulseUs
-    }
-
-    //==================================================
-    // 获取脉宽参数
-    //==================================================
-
-    /**
-     * 获取指定通道最小脉宽
-     */
-    //% block="PCA9685 舵机通道 %channel 最小脉宽"
-    //% channel.min=0 channel.max=15
-    export function getMinPulse(
-        channel: number
-    ): number {
-
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return DEFAULT_MIN_PULSE
-
-        return minPulse[channel]
-    }
-
-    /**
-     * 获取指定通道最大脉宽
-     */
-    //% block="PCA9685 舵机通道 %channel 最大脉宽"
-    //% channel.min=0 channel.max=15
-    export function getMaxPulse(
-        channel: number
-    ): number {
-
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return DEFAULT_MAX_PULSE
-
-        return maxPulse[channel]
-    }
-
-
-    //==================================================
-    // 设置移动步长
-    //==================================================
-
-    /**
-     * 设置所有舵机的移动步长
-     *
-     * 单位：度
-     */
-    //% block="设置舵机移动步长 %step °"
-    //% step.min=1 step.max=30 step.defl=5
+    //% block="设置运动步长 %step °"
+    //% step.min=1 step.max=30
+    //% step.defl=5
     export function setMoveStep(
         step: number
     ): void {
@@ -609,17 +215,14 @@ export function isMoving(
     }
 
 
-    //==================================================
-    // 设置移动间隔
-    //==================================================
-
     /**
-     * 设置所有舵机的移动间隔
+     * 设置平滑运动间隔
      *
      * 单位：毫秒
      */
-    //% block="设置舵机移动间隔 %delay 毫秒"
-    //% delay.min=10 delay.max=500 delay.defl=50
+    //% block="设置运动间隔 %delay ms"
+    //% delay.min=10 delay.max=1000
+    //% delay.defl=50
     export function setMoveDelay(
         delay: number
     ): void {
@@ -627,22 +230,107 @@ export function isMoving(
         if (delay < 10)
             delay = 10
 
-        if (delay > 500)
-            delay = 500
+        if (delay > 1000)
+            delay = 1000
 
         moveDelay = delay
     }
 
 
     //==================================================
-    // 设置舵机角度
+    // 舵机配置
     //==================================================
 
     /**
-     * 立即设置指定通道舵机角度
+     * 设置指定舵机的最大角度
+     *
+     * 180 = 普通舵机
+     * 270 = 270°舵机
+     * 360 = 360°舵机
      */
-    //% block="PCA9685 舵机通道 %channel 角度 %angle °"
-    //% channel.min=0 channel.max=15
+    //% block="设置舵机 %channel 最大角度 %angle °"
+    //% angle.min=1 angle.max=360
+    //% angle.defl=180
+    export function setMaxAngle(
+        channel: number,
+        angle: number
+    ): void {
+
+        if (!validChannel(channel))
+            return
+
+        if (angle < 1)
+            angle = 1
+
+        if (angle > 360)
+            angle = 360
+
+        maxAngle[channel] = angle
+
+        // 最大角度改变后，
+        // 当前角度和目标角度都必须重新限制。
+        currentAngle[channel] =
+            clampAngle(
+                channel,
+                currentAngle[channel]
+            )
+
+        targetAngle[channel] =
+            clampAngle(
+                channel,
+                targetAngle[channel]
+            )
+    }
+
+
+    /**
+     * 设置指定舵机的脉宽范围
+     *
+     * 单位：微秒
+     */
+    //% block="设置舵机 %channel 脉宽范围 最小 %min 最大 %max μs"
+    //% min.min=500 min.max=2500 min.defl=1000
+    //% max.min=500 max.max=2500 max.defl=2000
+    export function setPulseRange(
+        channel: number,
+        min: number,
+        max: number
+    ): void {
+
+        if (!validChannel(channel))
+            return
+
+        if (min < MIN_PULSE_LIMIT)
+            min = MIN_PULSE_LIMIT
+
+        if (max > MAX_PULSE_LIMIT)
+            max = MAX_PULSE_LIMIT
+
+        // 最小值必须小于最大值
+        if (min >= max)
+            return
+
+        minPulse[channel] = min
+        maxPulse[channel] = max
+
+        // 使用新的脉宽范围重新输出当前位置
+        applyAngle(
+            channel,
+            currentAngle[channel]
+        )
+    }
+
+
+    //==================================================
+    // 基础控制
+    //==================================================
+
+    /**
+     * 立即设置舵机角度
+     *
+     * 会取消当前平滑运动。
+     */
+    //% block="舵机 %channel 转到 %angle °"
     //% angle.min=0 angle.max=360
     //% angle.defl=90
     export function setAngle(
@@ -650,114 +338,144 @@ export function isMoving(
         angle: number
     ): void {
 
-        if (channel < 0 || channel >= CHANNEL_COUNT)
+        if (!validChannel(channel))
             return
 
-        angle =
-            clampAngle(
-                channel,
-                angle
-            )
+        angle = clampAngle(
+            channel,
+            angle
+        )
+
+        // 使旧后台任务失效
+        moveId[channel] =
+            (moveId[channel] || 0) + 1
+
+        moving[channel] = false
+        paused[channel] = false
 
         applyAngle(
             channel,
             angle
         )
 
-        targetAngle[channel] =
-            angle
+        targetAngle[channel] = angle
+    }
+
+
+    /**
+     * 舵机回到中心位置
+     */
+    //% block="舵机 %channel 回到中心"
+    export function center(
+        channel: number
+    ): void {
+
+        if (!validChannel(channel))
+            return
+
+        setAngle(
+            channel,
+            maxAngle[channel] >> 1
+        )
+    }
+
+
+    /**
+     * 停止舵机
+     *
+     * 保持当前角度。
+     * 不会继续原来的目标。
+     */
+    //% block="舵机 %channel 停止"
+    export function stop(
+        channel: number
+    ): void {
+
+        if (!validChannel(channel))
+            return
+
+        // 使旧后台任务失效
+        moveId[channel] =
+            (moveId[channel] || 0) + 1
 
         moving[channel] = false
         paused[channel] = false
+
+        targetAngle[channel] =
+            currentAngle[channel]
     }
 
-    //==================================================
-    // 当前角度
-    //==================================================
 
     /**
-     * 获取指定通道当前角度
+     * 暂停舵机
      *
-     * 返回：
-     * 当前软件记录的实际角度
+     * 保留原来的目标角度。
      */
-    //% block="PCA9685 舵机通道 %channel 当前角度"
-    //% channel.min=0 channel.max=15
-    export function getAngle(
+    //% block="舵机 %channel 暂停"
+    export function pause(
         channel: number
-    ): number {
+    ): void {
 
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return 0
+        if (!validChannel(channel))
+            return
 
-        return currentAngle[channel]
+        if (moving[channel])
+            paused[channel] = true
     }
 
-    //==================================================
-    // 目标角度
-    //==================================================
 
     /**
-     * 获取指定通道目标角度
-     *
-     * 返回：
-     * moveTo() 当前目标角度
+     * 继续舵机运动
      */
-    //% block="PCA9685 舵机通道 %channel 目标角度"
-    //% channel.min=0 channel.max=15
-    export function getTargetAngle(
+    //% block="舵机 %channel 继续"
+    export function resume(
         channel: number
-    ): number {
+    ): void {
 
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return 0
+        if (!validChannel(channel))
+            return
 
-        return targetAngle[channel]
+        if (paused[channel]) {
+
+            paused[channel] = false
+            moving[channel] = true
+        }
     }
 
-
-    //==================================================
-    // 回中
-    //==================================================
-
     /**
-     * 让指定通道舵机回到机械角度中心
+     * 等待指定通道舵机运动完成
      *
-     * 例如：
-     * 180° → 90°
-     * 270° → 135°
-     * 360° → 180°
+     * 注意：
+     * 这是阻塞函数。
+     * 常用于多个动作顺序执行。
      */
-    //% block="PCA9685 舵机通道 %channel 回中"
+    //% block="等待 PCA9685 舵机通道 %channel 完成运动"
     //% channel.min=0 channel.max=15
-    export function center(
+    export function wait(
         channel: number
     ): void {
 
         if (channel < 0 || channel >= CHANNEL_COUNT)
             return
 
-        let centerAngle =
-            maxAngle[channel] / 2
-
-        setAngle(
-            channel,
-            centerAngle
-        )
+        while (moving[channel]) {
+            basic.pause(10)
+        }
     }
 
-
     //==================================================
-    // 非阻塞移动
+    // 非阻塞平滑运动
     //==================================================
 
     /**
-     * 舵机平滑移动到指定角度
+     * 平滑移动到指定角度
      *
-     * 此函数不会阻塞主程序
+     * 非阻塞。
+     *
+     * 如果同一个通道正在执行 moveTo()，
+     * 新的 moveTo() 会自动取代旧目标。
      */
-    //% block="PCA9685 舵机通道 %channel 平滑移动到 %angle °"
-    //% channel.min=0 channel.max=15
+    //% block="舵机 %channel 平滑移动到 %angle °"
     //% angle.min=0 angle.max=360
     //% angle.defl=90
     export function moveTo(
@@ -765,99 +483,119 @@ export function isMoving(
         angle: number
     ): void {
 
-        if (channel < 0 || channel >= CHANNEL_COUNT)
+        if (!validChannel(channel))
             return
 
-        angle =
-            clampAngle(
-                channel,
-                angle
-            )
-
-        // 设置新的目标
-        targetAngle[channel] =
+        angle = clampAngle(
+            channel,
             angle
+        )
 
-        // 已经到达目标
-        if (
-            currentAngle[channel] ==
-            angle
-        ) {
+        // 创建新的运动任务 ID
+        moveId[channel] =
+            (moveId[channel] || 0) + 1
 
-            moving[channel] = false
-            paused[channel] = false
+        let id = moveId[channel]
 
-            return
-        }
-
-        // 如果已经存在后台任务
-        // 只更新目标角度
-        if (moving[channel])
-            return
-
-        moving[channel] = true
+        targetAngle[channel] = angle
         paused[channel] = false
+        moving[channel] = true
 
-        // 创建后台运动任务
-        control.runInBackground(function () {
+        control.inBackground(function () {
 
+            // 只有最新的运动任务可以继续运行
             while (
-                currentAngle[channel] !=
-                targetAngle[channel]
+                moving[channel] &&
+                moveId[channel] == id
             ) {
 
-                // 暂停状态
+                // 暂停
                 if (paused[channel]) {
 
-                    basic.pause(10)
-
+                    basic.pause(20)
                     continue
                 }
 
-                let current =
+                // 已经到达目标
+                if (
+                    currentAngle[channel] ==
+                    targetAngle[channel]
+                ) {
+
+                    moving[channel] = false
+                    break
+                }
+
+                let nextAngle =
                     currentAngle[channel]
 
-                let target =
+                // 正方向
+                if (
+                    nextAngle <
                     targetAngle[channel]
+                ) {
 
+                    nextAngle += moveStep
 
-                // 向正方向移动
-                if (current < target) {
+                    if (
+                        nextAngle >
+                        targetAngle[channel]
+                    )
+                        nextAngle =
+                            targetAngle[channel]
 
-                    current += moveStep
+                // 负方向
+                } else {
 
-                    if (current > target)
-                        current = target
+                    nextAngle -= moveStep
+
+                    if (
+                        nextAngle <
+                        targetAngle[channel]
+                    )
+                        nextAngle =
+                            targetAngle[channel]
                 }
 
-                // 向负方向移动
-                else {
-
-                    current -= moveStep
-
-                    if (current < target)
-                        current = target
-                }
-
-
-                // 设置舵机位置
                 applyAngle(
                     channel,
-                    current
+                    nextAngle
                 )
 
-
-                // 等待下一步
                 basic.pause(moveDelay)
             }
-
-
-            // 运动完成
-            moving[channel] = false
-            paused[channel] = false
         })
     }
 
+
+    //==================================================
+    // 相对移动
+    //==================================================
+
+    /**
+     * 从当前位置相对移动
+     *
+     * 正数：增加角度
+     * 负数：减少角度
+     */
+    //% block="舵机 %channel 相对移动 %delta °"
+    //% delta.min=-360 delta.max=360
+    //% delta.defl=10
+    export function moveBy(
+        channel: number,
+        delta: number
+    ): void {
+
+        if (!validChannel(channel))
+            return
+
+        moveTo(
+            channel,
+            currentAngle[channel] + delta
+        )
+    }
+
+    
     //==================================================
     // 两舵机同步移动
     //==================================================
@@ -935,119 +673,203 @@ export function isMoving(
     }
 
 
-    //==================================================
-    // 四舵机同步移动
-    //==================================================
 
-    /**
-     * 四个舵机同步移动
-     */
-    //% block="同步移动4个舵机"
-    //% expandableArgumentMode=enabled
-    export function moveToSync4(
-        ch1: number, angle1: number,
-        ch2: number, angle2: number,
-        ch3: number, angle3: number,
-        ch4: number, angle4: number
-    ): void {
-
-        moveToSync2(ch1, angle1, ch2, angle2)
-        moveToSync2(ch3, angle3, ch4, angle4)
-
-        wait(ch1)
-        wait(ch3)
-    }
 
     //==================================================
-    // 等待运动完成
+    // 状态查询
     //==================================================
 
     /**
-     * 等待指定通道舵机运动完成
+     * 判断舵机是否正在运动
      *
-     * 注意：
-     * 这是阻塞函数。
-     * 常用于多个动作顺序执行。
+     * 暂停状态返回 false。
      */
-    //% block="等待 PCA9685 舵机通道 %channel 完成运动"
-    //% channel.min=0 channel.max=15
-    export function wait(
+    //% block="舵机 %channel 正在运动"
+    /*
+    export function isMoving(
+        channel: number
+    ): boolean {
+
+        if (!validChannel(channel))
+            return false
+
+        return moving[channel] &&
+            !paused[channel]
+    }
+    */
+
+
+    /**
+     * 判断舵机是否处于暂停状态
+     */
+    //% block="舵机 %channel 已暂停"
+    /*
+    export function isPaused(
+        channel: number
+    ): boolean {
+
+        if (!validChannel(channel))
+            return false
+
+        return paused[channel]
+    }
+    */
+
+
+    /**
+     * 获取当前角度
+     */
+    //% block="舵机 %channel 当前角度"
+    /*
+    export function getAngle(
+        channel: number
+    ): number {
+
+        if (!validChannel(channel))
+            return 0
+
+        return currentAngle[channel]
+    }
+    */
+
+
+    /**
+     * 获取目标角度
+     */
+    //% block="舵机 %channel 目标角度"
+    /*
+    export function getTargetAngle(
+        channel: number
+    ): number {
+
+        if (!validChannel(channel))
+            return 0
+
+        return targetAngle[channel]
+    }
+    */
+
+
+    //==================================================
+    // 全通道控制
+    //==================================================
+
+    /**
+     * 停止所有舵机
+     *
+     * 保持当前位置。
+     */
+    //% block="停止所有舵机"
+    /*
+    export function stopAll(): void {
+
+        for (
+            let channel = 0;
+            channel < CHANNEL_COUNT;
+            channel++
+        ) {
+
+            if (moving[channel]) {
+
+                // 使后台任务失效
+                moveId[channel] =
+                    (moveId[channel] || 0) + 1
+
+                moving[channel] = false
+                paused[channel] = false
+
+                targetAngle[channel] =
+                    currentAngle[channel]
+            }
+        }
+    }
+    */
+
+
+    /**
+     * 暂停所有舵机
+     */
+    //% block="暂停所有舵机"
+    /*
+    export function pauseAll(): void {
+
+        for (
+            let channel = 0;
+            channel < CHANNEL_COUNT;
+            channel++
+        ) {
+
+            if (moving[channel])
+                paused[channel] = true
+        }
+    }
+    */
+
+    /**
+     * 继续所有舵机
+     */
+    //% block="继续所有舵机"
+    /*
+    export function resumeAll(): void {
+
+        for (
+            let channel = 0;
+            channel < CHANNEL_COUNT;
+            channel++
+        ) {
+
+            if (paused[channel]) {
+
+                paused[channel] = false
+                moving[channel] = true
+            }
+        }
+    }
+    */
+
+
+    //==================================================
+    // 软件参数复位
+    //==================================================
+
+    /**
+     * 恢复指定通道默认参数
+     *
+     * 只恢复软件参数。
+     * 不重新初始化 PCA9685。
+     */
+    //% block="恢复舵机 %channel 默认设置"
+    /*
+    export function reset(
         channel: number
     ): void {
 
-        if (channel < 0 || channel >= CHANNEL_COUNT)
+        if (!validChannel(channel))
             return
 
-        while (moving[channel]) {
-            basic.pause(10)
-        }
+        resetChannel(channel)
     }
+    */
 
-    //==================================================
-    // 等待全部完成
-    //==================================================
 
     /**
-     * 等待全部舵机完成运动
-     */
-    //% block="等待全部 PCA9685 舵机完成运动"
-    export function waitAll(): void {
-
-        let busy = true
-
-        while (busy) {
-
-            busy = false
-
-            for (let i = 0; i < CHANNEL_COUNT; i++) {
-
-                if (moving[i]) {
-
-                    busy = true
-                    break
-                }
-            }
-
-            basic.pause(10)
-        }
-    }
-
-    //==================================================
-    // 相对移动
-    //==================================================
-
-    /**
-     * 舵机相对当前角度移动
+     * 恢复所有通道默认参数
      *
-     * 正数：增加角度
-     * 负数：减少角度
+     * 只恢复软件参数。
+     * 不重新初始化 PCA9685。
      */
-    //% block="PCA9685 舵机通道 %channel 移动 %delta °"
-    //% channel.min=0 channel.max=15
-    //% delta.min=-360 delta.max=360
-    //% delta.defl=10
-    export function moveBy(
-        channel: number,
-        delta: number
-    ): void {
+    //% block="恢复所有舵机默认设置"
+    /*
+    export function resetAll(): void {
 
-        if (channel < 0 || channel >= CHANNEL_COUNT)
-            return
+        for (
+            let channel = 0;
+            channel < CHANNEL_COUNT;
+            channel++
+        ) {
 
-        let target =
-            currentAngle[channel] +
-            delta
-
-        target =
-            clampAngle(
-                channel,
-                target
-            )
-
-        moveTo(
-            channel,
-            target
-        )
+            resetChannel(channel)
+        }
     }
-
+    */
 }

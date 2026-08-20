@@ -20,34 +20,45 @@ namespace MBNumberHandler {
         switch (value) {
 
             case "0":
-                return number0()
+                return true
 
             case "1":
-                return number1()
+                MBPCA9685Servo.resume(3)
+                MBPCA9685Servo.resume(4)
+                return true
 
             case "2":
-                return number2()
+                MBPCA9685Servo.moveTo(3, 180)
+                MBPCA9685Servo.moveTo(4, 180)
+                basic.showNumber(2)
+                return true
 
             case "3":
-                return number3()
+                MBPCA9685Servo.pause(3)
+                MBPCA9685Servo.pause(4)
+                basic.showNumber(3)
+                return true
 
             case "4":
-                return number4()
+                MBPCA9685Servo.setAngle(4, 0)
+                MBPCA9685Servo.setAngle(3, 0)
+
+                return true
 
             case "5":
-                return number5()
+                return true
 
             case "6":
-                return number6()
+                return true
 
             case "7":
-                return number7()
+                return true
 
             case "8":
-                return number8()
+                return true
 
             case "9":
-                return number9()
+                return true
 
             default:
                 basic.showString(
@@ -58,103 +69,5 @@ namespace MBNumberHandler {
 
     }
 
-    function number0(): boolean {
-
-        showNumber(0)
-
-        return true
-    }
-
-    function number1(): boolean {
-        MBPCA9685Servo.moveToSync2(
-            0, 180,
-            1, 90
-        )
-        return true
-    }
-
-    function number2(): boolean {
-         MBPCA9685Servo.pauseAll()
-
-        return true
-    }
-
-    function number3(): boolean {
-        MBPCA9685Servo.resumeAll()
-
-        return true
-    }
-
-    function number4(): boolean {
-        MBPCA9685Servo.setAngle(4, 0)
-        MBPCA9685Servo.setAngle(3, 0)
-
-        return true
-    }
-
-    function number5(): boolean {
-
-        MBPCA9685Servo.setMaxAngle(0, 270)
-        MBPCA9685Servo.setPulseRange(0, 600, 2400)
-
-        MBPCA9685Servo.setAngle(0, 30)
-
-        basic.showNumber(MBPCA9685Servo.getAngle(0))
-        basic.pause(1000)
-
-        MBPCA9685Servo.moveTo(0, 180)
-
-        basic.showNumber(MBPCA9685Servo.getTargetAngle(0))
-        return true
-    }
-
-    function number6(): boolean {
-
-        MBPCA9685Servo.moveTo(3, 270)
-
-            basic.forever(function () {
-
-                if (MBPCA9685Servo.isMoving(3)) {
-                    basic.showIcon(IconNames.Yes)
-                } else {
-                    basic.showIcon(IconNames.No)
-                }
-
-            })
-
-            return true
-        }
-
-    function number7(): boolean {
-        MBPCA9685Servo.resume(3)
-        MBPCA9685Servo.resume(4)
-        showNumber(7)
-        return true
-    }
-
-    function number8(): boolean {
-        MBPCA9685Servo.moveBy(3, 15)
-        MBPCA9685Servo.moveBy(4,15)
-        showNumber(8)
-        return true
-    }
-
-    function number9(): boolean {
-        L298N.stop(0)
-        showNumber(9)
-        return true
-    }
-
-
-
-    function showNumber(
-        value: number
-    ) {
-
-        basic.showNumber(
-            value
-        )
-
-    }
 
 }
