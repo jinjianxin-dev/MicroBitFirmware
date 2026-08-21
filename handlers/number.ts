@@ -23,8 +23,8 @@ namespace MBNumberHandler {
                 return true
 
             case "1":
-                MBPCA9685Servo.resume(3)
-                MBPCA9685Servo.resume(4)
+                MBMotor.forward(0)
+                MBMotor.forward(1)
                 return true
 
             case "2":
