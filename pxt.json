@@ -20,11 +20,16 @@
         "protocol/response.ts",
         "communication/transport.ts",
         "router/router.ts",        
-        "devices/MBMotor.ts",
-        "devices/MBServo.ts",
+
+
+        "devices/Motor_MB.ts",     
+        "devices/Servo_MB.ts",
+        "devices/Servo_PCA.ts",
+        "devices/PCA_L298N.ts",
         "devices/PCA9685.ts",
-        "devices/L298N.ts",
-        "devices/MBPCA9685Servo.ts"
+        "devices/MB_L298N.ts",
+        "devices/MBCar.ts"
+        
     ],
     "testFiles": [
         "test.ts"

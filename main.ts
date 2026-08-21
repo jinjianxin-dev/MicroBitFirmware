@@ -1,12 +1,11 @@
 
 
-/**
- * 当前测试：
- * MBServo Example
- */
 
-
-
+Motor.init()
+input.onButtonPressed(Button.A, function () {
+    Motor.forward(0)
+    Motor.forward(1)
+})
 
 bluetooth.startUartService()
 

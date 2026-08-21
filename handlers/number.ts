@@ -23,32 +23,31 @@ namespace MBNumberHandler {
                 return true
 
             case "1":
-                MBMotor.forward(0)
-                MBMotor.forward(1)
+                MBCar.forward(80)
                 return true
 
             case "2":
-                MBPCA9685Servo.moveTo(3, 180)
-                MBPCA9685Servo.moveTo(4, 180)
-                basic.showNumber(2)
+                MBCar.backward(80)
+                
                 return true
 
             case "3":
-                MBPCA9685Servo.pause(3)
-                MBPCA9685Servo.pause(4)
+                MBCar.turnLeft()
+                
                 basic.showNumber(3)
                 return true
 
             case "4":
-                MBPCA9685Servo.setAngle(4, 0)
-                MBPCA9685Servo.setAngle(3, 0)
+                 MBCar.turnRight()
 
                 return true
 
             case "5":
+                MBCar.spinLeft(50)
                 return true
 
             case "6":
+                MBCar.stop()
                 return true
 
             case "7":
