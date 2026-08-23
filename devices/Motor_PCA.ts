@@ -27,7 +27,7 @@
  */
 
 //% color=#E91E63 icon="\uf1b9" weight=80
-namespace Motor_bak {
+namespace Motor {
 
     //==================================================
     // 当前速度
@@ -114,7 +114,7 @@ namespace Motor_bak {
 
 
         // 交给底层驱动
-
+        //basic.showNumber(speed)
         PCA_L298N.setSpeed(
             motor,
             speed

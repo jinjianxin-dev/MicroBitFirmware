@@ -50,8 +50,8 @@ namespace PCA_L298N {
     let MOTOR_0_IN2 = 9
 
     // 轮子 1
-    let MOTOR_1_IN1 = 10
-    let MOTOR_1_IN2 = 11
+    let MOTOR_1_IN1 = 12
+    let MOTOR_1_IN2 = 13
 
 
     //==================================================
@@ -216,6 +216,7 @@ namespace PCA_L298N {
         // 先关闭反方向
         PCA9685.setLow(in2)
 
+        //basic.showNumber(speed)
         // 再输出正转 PWM
         PCA9685.setDuty(
             in1,

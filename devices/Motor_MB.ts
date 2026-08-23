@@ -27,7 +27,7 @@
  */
 
 //% color=#E91E63 icon="\uf1b9" weight=80
-namespace Motor {
+namespace Motor_bak {
 
     //==================================================
     // 当前速度

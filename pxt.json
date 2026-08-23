@@ -22,14 +22,15 @@
         "router/router.ts",        
 
 
-        "devices/Motor_MB.ts",     
+        "devices/Motor_PCA.ts",     
         "devices/Servo_MB.ts",
         "devices/Servo_PCA.ts",
         "devices/PCA_L298N.ts",
         "devices/PCA9685.ts",
         "devices/MB_L298N.ts",
-        "devices/MBCar.ts"
-        
+        "devices/MBCar.ts",
+        "devices/PCA9685_SuperBit_Test.ts"
+            
     ],
     "testFiles": [
         "test.ts"

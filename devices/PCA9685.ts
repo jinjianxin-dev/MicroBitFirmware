@@ -127,22 +127,17 @@ namespace PCA9685 {
 
         buffer[0] = base
 
-        // ON
         buffer[1] = on & 0xFF
-        buffer[2] = (on >> 8) & 0x0F
+        buffer[2] = (on >> 8) & 0xFF
 
-        // OFF
         buffer[3] = off & 0xFF
-        buffer[4] = (off >> 8) & 0x0F
+        buffer[4] = (off >> 8) & 0xFF
 
-        // 一次 I2C 写入完成四个寄存器
         pins.i2cWriteBuffer(
             ADDRESS,
-            buffer,
-            false
+            buffer
         )
     }
-
 
     //==================================================
     // 内部：FULL_ON
@@ -241,10 +236,7 @@ namespace PCA9685 {
 
         mode2 = mode2 | MODE2_OUTDRV
 
-        writeRegister(
-            MODE2,
-            mode2
-        )
+        writeRegister(MODE2, mode2 )
 
         // 设置电机 PWM 频率
         setFrequency(50)
@@ -278,7 +270,7 @@ namespace PCA9685 {
      * 设置指定通道为低电平
      */
     //% block="PCA9685 通道 %channel 输出低电平"
-    export function setLow(
+    export function setLow_bak(
         channel: number
     ): void {
 
@@ -286,6 +278,20 @@ namespace PCA9685 {
             return
 
         setFullOff(channel)
+    }
+
+    export function setLow(
+        channel: number
+    ): void {
+
+        if (channel < 0 || channel > 15)
+            return
+
+        setPWM(
+            channel,
+            0,
+            0
+        )
     }
 
 

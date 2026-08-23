@@ -7,34 +7,93 @@
  *
  * MBCar
  *    ↓
- * Motor
+ * Motor_PCA
  *    ↓
- * PCA_L298N 或 MB_L298N
+ * PCA_L298N
+ *    ↓
+ * PCA9685
+ *    ↓
+ * L298N
+ *    ↓
+ * 左右轮
  *
  * 轮子定义：
  *
  * 0 = 左轮
  * 1 = 右轮
+ *
+ * V2.2.1
+ *
+ * 控制方式：
+ *
+ * forward()
+ *   每调用一次，速度增加 10%
+ *
+ * backward()
+ *   每调用一次，速度增加 10%
+ *
+ * turnLeft()
+ *   每调用一次，左转幅度增加 10%
+ *
+ * turnRight()
+ *   每调用一次，右转幅度增加 10%
+ *
+ * spinLeft(speed)
+ *   原地左转
+ *
+ * spinRight(speed)
+ *   原地右转
  */
 
 //% color=#4CAF50 icon="\uf1b9" weight=85
 namespace MBCar {
 
     //==================================================
-    // 当前基础速度
+    // 常量
     //==================================================
 
     /**
-     * 小车当前基础速度
-     *
-     * 正数：前进
-     * 负数：后退
-     * 0：停止
-     *
-     * turnLeft / turnRight
-     * 都以此速度作为转弯基准。
+     * 每次调用增加的速度 / 转弯幅度
      */
-    let baseSpeed = 0
+    const STEP = 10
+
+
+    //==================================================
+    // 当前运动状态
+    //==================================================
+
+    /**
+     * 当前速度
+     *
+     * 0~100
+     *
+     * 这里保存的是速度绝对值，
+     * 不包含前进 / 后退方向。
+     */
+    let speed = 0
+
+
+    /**
+     * 当前运动方向
+     *
+     * 1  = 前进
+     * -1 = 后退
+     */
+    let direction = 1
+
+
+    /**
+     * 当前转弯幅度
+     *
+     * 0~100
+     *
+     * 0：
+     * 直行
+     *
+     * 数值越大：
+     * 转弯越急
+     */
+    let turnAmount = 0
 
 
     //==================================================
@@ -49,7 +108,9 @@ namespace MBCar {
 
         Motor.init()
 
-        baseSpeed = 0
+        speed = 0
+        direction = 1
+        turnAmount = 0
     }
 
 
@@ -61,10 +122,10 @@ namespace MBCar {
      * 左右轮独立驱动
      *
      * leftSpeed：
-     * 左轮速度（-100~100）
+     * 左轮速度 -100~100
      *
      * rightSpeed：
-     * 右轮速度（-100~100）
+     * 右轮速度 -100~100
      */
     //% block="小车 左轮 %leftSpeed %% 右轮 %rightSpeed %%"
     //% leftSpeed.min=-100 leftSpeed.max=100
@@ -95,18 +156,42 @@ namespace MBCar {
     /**
      * 小车前进
      *
-     * speed：
-     * 0~100
+     * 每调用一次增加 10%。
+     *
+     * 第一次：
+     * 10%
+     *
+     * 第二次：
+     * 20%
+     *
+     * 第三次：
+     * 30%
+     *
+     * 同时恢复直行状态。
      */
-    //% block="小车前进 速度 %speed %%"
-    //% speed.min=0 speed.max=100
-    //% speed.defl=50
-    export function forward(
-        speed: number
-    ): void {
+    //% block="小车前进"
+    export function forward(): void {
 
-        baseSpeed = speed
+        // 如果当前不是前进状态
+        // 从 10% 开始
+        if (direction != 1) {
 
+            speed = STEP
+            direction = 1
+
+        } else {
+
+            speed += STEP
+
+            if (speed > 100)
+                speed = 100
+        }
+
+
+        // 前进时重新恢复直行
+        turnAmount = 0
+        
+        //basic.showNumber(speed)
         drive(
             speed,
             speed
@@ -121,17 +206,41 @@ namespace MBCar {
     /**
      * 小车后退
      *
-     * speed：
-     * 0~100
+     * 每调用一次增加 10%。
+     *
+     * 第一次：
+     * -10%
+     *
+     * 第二次：
+     * -20%
+     *
+     * 第三次：
+     * -30%
+     *
+     * 同时恢复直行状态。
      */
-    //% block="小车后退 速度 %speed %%"
-    //% speed.min=0 speed.max=100
-    //% speed.defl=50
-    export function backward(
-        speed: number
-    ): void {
+    //% block="小车后退"
+    export function backward(): void {
 
-        baseSpeed = -speed
+        // 如果当前不是后退状态
+        // 从 10% 开始
+        if (direction != -1) {
+
+            speed = STEP
+            direction = -1
+
+        } else {
+
+            speed += STEP
+
+            if (speed > 100)
+                speed = 100
+        }
+
+
+        // 后退时重新恢复直行
+        turnAmount = 0
+
 
         drive(
             -speed,
@@ -147,17 +256,67 @@ namespace MBCar {
     /**
      * 小车弧线左转
      *
-     * 左轮速度为基础速度的一半，
-     * 右轮保持基础速度。
+     * 每调用一次增加 10% 转弯幅度。
      *
-     * 连续调用不会越来越慢。
+     * 基础速度保持不变。
+     *
+     * 前进时：
+     *
+     * 左轮逐渐减速
+     * 右轮保持速度
+     *
+     * 后退时：
+     *
+     * 左轮逐渐减小反转速度
+     * 右轮保持速度
      */
     //% block="小车左转"
     export function turnLeft(): void {
 
+        // 没有速度时不执行
+        if (speed == 0)
+            return
+
+
+        // 增加转弯幅度
+        turnAmount += STEP
+
+
+        if (turnAmount > 100)
+            turnAmount = 100
+
+
+        let innerSpeed = speed - Math.round(
+            speed * turnAmount / 100
+        )
+
+
+        if (innerSpeed < 0)
+            innerSpeed = 0
+
+
+        //==================================================
+        // 前进
+        //==================================================
+
+        if (direction == 1) {
+
+            drive(
+                innerSpeed,
+                speed
+            )
+
+            return
+        }
+
+
+        //==================================================
+        // 后退
+        //==================================================
+
         drive(
-            Math.round(baseSpeed / 2),
-            baseSpeed
+            -innerSpeed,
+            -speed
         )
     }
 
@@ -169,17 +328,57 @@ namespace MBCar {
     /**
      * 小车弧线右转
      *
-     * 左轮保持基础速度，
-     * 右轮速度为基础速度的一半。
+     * 每调用一次增加 10% 转弯幅度。
      *
-     * 连续调用不会越来越慢。
+     * 基础速度保持不变。
      */
     //% block="小车右转"
     export function turnRight(): void {
 
+        // 没有速度时不执行
+        if (speed == 0)
+            return
+
+
+        // 增加转弯幅度
+        turnAmount += STEP
+
+
+        if (turnAmount > 100)
+            turnAmount = 100
+
+
+        let innerSpeed = speed - Math.round(
+            speed * turnAmount / 100
+        )
+
+
+        if (innerSpeed < 0)
+            innerSpeed = 0
+
+
+        //==================================================
+        // 前进
+        //==================================================
+
+        if (direction == 1) {
+
+            drive(
+                speed,
+                innerSpeed
+            )
+
+            return
+        }
+
+
+        //==================================================
+        // 后退
+        //==================================================
+
         drive(
-            baseSpeed,
-            Math.round(baseSpeed / 2)
+            -speed,
+            -innerSpeed
         )
     }
 
@@ -193,6 +392,8 @@ namespace MBCar {
      *
      * 左轮反转
      * 右轮正转
+     *
+     * 不修改小车当前速度状态。
      */
     //% block="小车原地左转 速度 %speed %%"
     //% speed.min=0 speed.max=100
@@ -217,6 +418,8 @@ namespace MBCar {
      *
      * 左轮正转
      * 右轮反转
+     *
+     * 不修改小车当前速度状态。
      */
     //% block="小车原地右转 速度 %speed %%"
     //% speed.min=0 speed.max=100
@@ -239,7 +442,7 @@ namespace MBCar {
     /**
      * 小车停止
      *
-     * 两个轮子进入滑行停止状态。
+     * 清除速度和转弯状态。
      */
     //% block="小车停止"
     export function stop(): void {
@@ -247,7 +450,9 @@ namespace MBCar {
         Motor.stop(0)
         Motor.stop(1)
 
-        baseSpeed = 0
+        speed = 0
+        direction = 1
+        turnAmount = 0
     }
 
 
@@ -257,6 +462,8 @@ namespace MBCar {
 
     /**
      * 小车主动刹车
+     *
+     * 清除速度和转弯状态。
      */
     //% block="小车刹车"
     export function brake(): void {
@@ -264,7 +471,9 @@ namespace MBCar {
         Motor.brake(0)
         Motor.brake(1)
 
-        baseSpeed = 0
+        speed = 0
+        direction = 1
+        turnAmount = 0
     }
 
 }

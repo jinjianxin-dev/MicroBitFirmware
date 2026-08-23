@@ -1,11 +1,7 @@
 
 
 
-Motor.init()
-input.onButtonPressed(Button.A, function () {
-    Motor.forward(0)
-    Motor.forward(1)
-})
+//PCA9685.init()
 
 bluetooth.startUartService()
 
