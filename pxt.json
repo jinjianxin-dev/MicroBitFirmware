@@ -10,17 +10,18 @@
     "files": [
         "main.ts",
         "README.md",
-        "protocol/protocol.ts",
-        "protocol/command.ts",
+
         "protocol/parser.ts",
-        
+        "protocol/protocol.ts",
+        "protocol/response.ts",    
+
         "handlers/direction.ts",
         "handlers/number.ts",
+        "handlers/PCA.ts",
         "handlers/system.ts",
-        "protocol/response.ts",
+       
         "communication/transport.ts",
         "router/router.ts",        
-
 
         "devices/Motor_PCA.ts",     
         "devices/Servo_MB.ts",
@@ -29,7 +30,8 @@
         "devices/PCA9685.ts",
         "devices/MB_L298N.ts",
         "devices/MBCar.ts",
-        "devices/PCA9685_SuperBit_Test.ts"
+        "devices/Obstacle.ts",
+        "devices/Ultrasonic.ts"
             
     ],
     "testFiles": [

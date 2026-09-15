@@ -24,7 +24,7 @@ namespace MBTransport {
     ){
 
         //
-        bluetooth.uartWriteString(
+        bluetooth.uartWriteLine(
             message
         )
 

@@ -3,46 +3,27 @@
  *
  * MBCar 是面向 MakeCode 用户的小车运动控制接口。
  *
- * 底层硬件：
+ * V3.0.0
  *
- * MBCar
- *    ↓
- * Motor_PCA
- *    ↓
- * PCA_L298N
- *    ↓
- * PCA9685
- *    ↓
- * L298N
- *    ↓
- * 左右轮
+ * 新增：
+ * - 自动避障
+ * - 超声波检测
+ * - 左 / 中 / 右扫描
  *
- * 轮子定义：
+ * 依赖：
+ * - Motor.ts
+ * - Ultrasonic.ts
+ * - Obstacle.ts
  *
- * 0 = 左轮
- * 1 = 右轮
+ * 硬件：
+ * - HC-SR04
+ * - SG90 + PCA9685 CH0
  *
- * V2.2.1
- *
- * 控制方式：
- *
- * forward()
- *   每调用一次，速度增加 10%
- *
- * backward()
- *   每调用一次，速度增加 10%
- *
- * turnLeft()
- *   每调用一次，左转幅度增加 10%
- *
- * turnRight()
- *   每调用一次，右转幅度增加 10%
- *
- * spinLeft(speed)
- *   原地左转
- *
- * spinRight(speed)
- *   原地右转
+ * 自动避障：
+ * - 安全距离：20cm
+ * - 左：150°
+ * - 中：90°
+ * - 右：30°
  */
 
 //% color=#4CAF50 icon="\uf1b9" weight=85
@@ -52,57 +33,58 @@ namespace MBCar {
     // 常量
     //==================================================
 
-    /**
-     * 每次调用增加的速度 / 转弯幅度
-     */
     const STEP = 10
+
+    /**
+     * 自动避障安全距离
+     *
+     * 前方距离小于等于此值时开始避障
+     */
+    const SAFE_DISTANCE = 20
+
+    /**
+     * 避障转向时间
+     */
+    const AVOID_TURN_TIME = 350
+
+    /**
+     * 三面都被挡住时的后退时间
+     */
+    const AVOID_BACK_TIME = 300
+
+    /**
+     * 三面都被挡住时的转向时间
+     */
+    const AVOID_SPIN_TIME = 500
 
 
     //==================================================
     // 当前运动状态
     //==================================================
 
-    /**
-     * 当前速度
-     *
-     * 0~100
-     *
-     * 这里保存的是速度绝对值，
-     * 不包含前进 / 后退方向。
-     */
     let speed = 0
 
-
-    /**
-     * 当前运动方向
-     *
-     * 1  = 前进
-     * -1 = 后退
-     */
     let direction = 1
 
-
     /**
-     * 当前转弯幅度
-     *
-     * 0~100
-     *
-     * 0：
-     * 直行
-     *
-     * 数值越大：
-     * 转弯越急
+     * 当前转弯幅度（0~100）
      */
     let turnAmount = 0
+
+    /**
+     * 当前转向方向
+     *
+     * -1 = 左转
+     *  0 = 直行
+     *  1 = 右转
+     */
+    let turnDirection = 0
 
 
     //==================================================
     // 初始化
     //==================================================
 
-    /**
-     * 初始化小车
-     */
     //% block="初始化小车"
     export function init(): void {
 
@@ -111,22 +93,14 @@ namespace MBCar {
         speed = 0
         direction = 1
         turnAmount = 0
+        turnDirection = 0
     }
 
 
     //==================================================
-    // 差速驱动
+    // 左右轮独立驱动
     //==================================================
 
-    /**
-     * 左右轮独立驱动
-     *
-     * leftSpeed：
-     * 左轮速度 -100~100
-     *
-     * rightSpeed：
-     * 右轮速度 -100~100
-     */
     //% block="小车 左轮 %leftSpeed %% 右轮 %rightSpeed %%"
     //% leftSpeed.min=-100 leftSpeed.max=100
     //% leftSpeed.defl=50
@@ -137,15 +111,8 @@ namespace MBCar {
         rightSpeed: number
     ): void {
 
-        Motor.setSpeed(
-            0,
-            leftSpeed
-        )
-
-        Motor.setSpeed(
-            1,
-            rightSpeed
-        )
+        Motor.setSpeed(0, leftSpeed)
+        Motor.setSpeed(1, rightSpeed)
     }
 
 
@@ -153,30 +120,12 @@ namespace MBCar {
     // 前进
     //==================================================
 
-    /**
-     * 小车前进
-     *
-     * 每调用一次增加 10%。
-     *
-     * 第一次：
-     * 10%
-     *
-     * 第二次：
-     * 20%
-     *
-     * 第三次：
-     * 30%
-     *
-     * 同时恢复直行状态。
-     */
     //% block="小车前进"
     export function forward(): void {
 
-        // 如果当前不是前进状态
-        // 从 10% 开始
         if (direction != 1) {
 
-            speed = STEP
+            speed = 50
             direction = 1
 
         } else {
@@ -187,15 +136,11 @@ namespace MBCar {
                 speed = 100
         }
 
-
-        // 前进时重新恢复直行
+        // 恢复直行
         turnAmount = 0
-        
-        //basic.showNumber(speed)
-        drive(
-            speed,
-            speed
-        )
+        turnDirection = 0
+
+        drive(speed, speed)
     }
 
 
@@ -203,30 +148,12 @@ namespace MBCar {
     // 后退
     //==================================================
 
-    /**
-     * 小车后退
-     *
-     * 每调用一次增加 10%。
-     *
-     * 第一次：
-     * -10%
-     *
-     * 第二次：
-     * -20%
-     *
-     * 第三次：
-     * -30%
-     *
-     * 同时恢复直行状态。
-     */
     //% block="小车后退"
     export function backward(): void {
 
-        // 如果当前不是后退状态
-        // 从 10% 开始
         if (direction != -1) {
 
-            speed = STEP
+            speed = 50
             direction = -1
 
         } else {
@@ -237,201 +164,206 @@ namespace MBCar {
                 speed = 100
         }
 
-
-        // 后退时重新恢复直行
+        // 恢复直行
         turnAmount = 0
+        turnDirection = 0
 
-
-        drive(
-            -speed,
-            -speed
-        )
+        drive(-speed, -speed)
     }
 
 
     //==================================================
-    // 弧线左转
+    // 左转（弧线）
     //==================================================
 
-    /**
-     * 小车弧线左转
-     *
-     * 每调用一次增加 10% 转弯幅度。
-     *
-     * 基础速度保持不变。
-     *
-     * 前进时：
-     *
-     * 左轮逐渐减速
-     * 右轮保持速度
-     *
-     * 后退时：
-     *
-     * 左轮逐渐减小反转速度
-     * 右轮保持速度
-     */
     //% block="小车左转"
     export function turnLeft(): void {
 
-        // 没有速度时不执行
         if (speed == 0)
             return
 
+        // 如果之前是右转，重新开始左转
+        if (turnDirection != -1) {
+            turnAmount = 0
+            turnDirection = -1
+        }
 
-        // 增加转弯幅度
         turnAmount += STEP
-
 
         if (turnAmount > 100)
             turnAmount = 100
-
 
         let innerSpeed = speed - Math.round(
             speed * turnAmount / 100
         )
 
-
         if (innerSpeed < 0)
             innerSpeed = 0
 
-
-        //==================================================
-        // 前进
-        //==================================================
-
         if (direction == 1) {
 
-            drive(
-                innerSpeed,
-                speed
-            )
+            drive(innerSpeed, speed)
 
-            return
+        } else {
+
+            drive(-innerSpeed, -speed)
         }
-
-
-        //==================================================
-        // 后退
-        //==================================================
-
-        drive(
-            -innerSpeed,
-            -speed
-        )
     }
 
 
     //==================================================
-    // 弧线右转
+    // 右转（弧线）
     //==================================================
 
-    /**
-     * 小车弧线右转
-     *
-     * 每调用一次增加 10% 转弯幅度。
-     *
-     * 基础速度保持不变。
-     */
     //% block="小车右转"
     export function turnRight(): void {
 
-        // 没有速度时不执行
         if (speed == 0)
             return
 
+        // 如果之前是左转，重新开始右转
+        if (turnDirection != 1) {
+            turnAmount = 0
+            turnDirection = 1
+        }
 
-        // 增加转弯幅度
         turnAmount += STEP
-
 
         if (turnAmount > 100)
             turnAmount = 100
-
 
         let innerSpeed = speed - Math.round(
             speed * turnAmount / 100
         )
 
-
         if (innerSpeed < 0)
             innerSpeed = 0
 
-
-        //==================================================
-        // 前进
-        //==================================================
-
         if (direction == 1) {
 
-            drive(
-                speed,
-                innerSpeed
-            )
+            drive(speed, innerSpeed)
+
+        } else {
+
+            drive(-speed, -innerSpeed)
+        }
+    }
+
+
+    //==================================================
+    // 原地左转
+    //==================================================
+
+    //% block="小车原地左转 速度 %speed %%"
+    //% speed.min=0 speed.max=100
+    //% speed.defl=50
+    export function spinLeft(speed: number): void {
+
+        drive(-speed, speed)
+    }
+
+
+    //==================================================
+    // 原地右转
+    //==================================================
+
+    //% block="小车原地右转 速度 %speed %%"
+    //% speed.min=0 speed.max=100
+    //% speed.defl=50
+    export function spinRight(speed: number): void {
+
+        drive(speed, -speed)
+    }
+
+
+    //==================================================
+    // 自动避障
+    //==================================================
+
+    /**
+     * 自动避障
+     *
+     * 每调用一次执行一次检测：
+     *
+     * 1. 检测前方
+     * 2. 无障碍 -> 前进
+     * 3. 有障碍 -> 停止
+     * 4. 扫描左、中、右
+     * 5. 选择较远的一侧
+     * 6. 转向
+     *
+     * 建议放在 forever 中使用。
+     */
+    //% block="小车自动避障"
+    export function autoAvoid(): void {
+
+        //================================================
+        // 检测前方
+        //================================================
+
+        let front = Ultrasonic.distanceCM()
+
+        if (front > SAFE_DISTANCE) {
+
+            // 前方没有障碍
+            forward()
 
             return
         }
 
 
-        //==================================================
-        // 后退
-        //==================================================
+        //================================================
+        // 前方有障碍
+        //================================================
 
-        drive(
-            -speed,
-            -innerSpeed
-        )
-    }
+        stop()
 
 
-    //==================================================
-    // 原地左旋转
-    //==================================================
+        //================================================
+        // 扫描左、中、右
+        //================================================
 
-    /**
-     * 小车原地左旋转
-     *
-     * 左轮反转
-     * 右轮正转
-     *
-     * 不修改小车当前速度状态。
-     */
-    //% block="小车原地左转 速度 %speed %%"
-    //% speed.min=0 speed.max=100
-    //% speed.defl=50
-    export function spinLeft(
-        speed: number
-    ): void {
-
-        drive(
-            -speed,
-            speed
-        )
-    }
+        Obstacle.scan()
 
 
-    //==================================================
-    // 原地右旋转
-    //==================================================
+        let left = Obstacle.leftDistance()
+        let right = Obstacle.rightDistance()
 
-    /**
-     * 小车原地右旋转
-     *
-     * 左轮正转
-     * 右轮反转
-     *
-     * 不修改小车当前速度状态。
-     */
-    //% block="小车原地右转 速度 %speed %%"
-    //% speed.min=0 speed.max=100
-    //% speed.defl=50
-    export function spinRight(
-        speed: number
-    ): void {
 
-        drive(
-            speed,
-            -speed
-        )
+        //================================================
+        // 左右都有空间
+        //================================================
+
+        if (left > SAFE_DISTANCE || right > SAFE_DISTANCE) {
+
+            if (left > right) {
+
+                spinLeft(50)
+                basic.pause(AVOID_TURN_TIME)
+
+            } else {
+
+                spinRight(50)
+                basic.pause(AVOID_TURN_TIME)
+            }
+
+            return
+        }
+
+
+        //================================================
+        // 三面都被挡住
+        //================================================
+
+        backward()
+
+        basic.pause(AVOID_BACK_TIME)
+
+        spinRight(50)
+
+        basic.pause(AVOID_SPIN_TIME)
+
+        stop()
     }
 
 
@@ -439,11 +371,6 @@ namespace MBCar {
     // 停止
     //==================================================
 
-    /**
-     * 小车停止
-     *
-     * 清除速度和转弯状态。
-     */
     //% block="小车停止"
     export function stop(): void {
 
@@ -453,6 +380,7 @@ namespace MBCar {
         speed = 0
         direction = 1
         turnAmount = 0
+        turnDirection = 0
     }
 
 
@@ -460,11 +388,6 @@ namespace MBCar {
     // 刹车
     //==================================================
 
-    /**
-     * 小车主动刹车
-     *
-     * 清除速度和转弯状态。
-     */
     //% block="小车刹车"
     export function brake(): void {
 
@@ -474,6 +397,6 @@ namespace MBCar {
         speed = 0
         direction = 1
         turnAmount = 0
+        turnDirection = 0
     }
-
 }

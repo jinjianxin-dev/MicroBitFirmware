@@ -58,7 +58,7 @@ namespace PCA9685 {
     // 内部：写寄存器
     //==================================================
 
-    function writeRegister(
+    export function writeRegister(
         reg: number,
         value: number
     ): void {
@@ -80,7 +80,7 @@ namespace PCA9685 {
     // 内部：读寄存器
     //==================================================
 
-    function readRegister(
+    export function readRegister(
         reg: number
     ): number {
 
@@ -138,6 +138,101 @@ namespace PCA9685 {
             buffer
         )
     }
+
+    export function readRegisters(startReg: number, length: number): Buffer {
+        let buf = pins.createBuffer(length)
+
+        pins.i2cWriteNumber(ADDRESS, startReg, NumberFormat.UInt8BE, true)
+        buf = pins.i2cReadBuffer(ADDRESS, length)
+
+        return buf
+    }
+
+    /**
+ * 返回 PCA9685 当前状态
+ *
+ * 供手机 STATUS 页面使用
+ *
+ * 当前返回：
+ * MODE1
+ * MODE2
+ * PRE_SCALE
+ * CH0 ~ CH11
+ *
+ * 注意：
+ * 这里暂时只返回 PWM 原始值，
+ * 暂不处理 Servo / Motor 的语义。
+ */
+    export function getStatusString(): string {
+
+        let mode1 =
+            readRegister(MODE1)
+
+        let mode2 =
+            readRegister(MODE2)
+
+        let pre =
+            readRegister(PRE_SCALE)
+
+
+        let result =
+            "RSP:PCA:STATUS:" +
+            "MODE1=" + mode1 +
+            ";MODE2=" + mode2 +
+            ";PRE=" + pre
+
+
+        //================================
+        // PWM CH0 ~ CH11
+        //================================
+
+        for (
+            let ch = 0;
+            ch < 12;
+            ch++
+        ) {
+
+            let base =
+                LED0_ON_L +
+                ch * 4
+
+
+            let onL =
+                readRegister(base)
+
+            let onH =
+                readRegister(base + 1)
+
+            let offL =
+                readRegister(base + 2)
+
+            let offH =
+                readRegister(base + 3)
+
+
+            let on =
+                onL |
+                (onH << 8)
+
+
+            let off =
+                offL |
+                (offH << 8)
+
+
+            // 当前先返回 OFF 值
+            result +=
+                ";CH" +
+                ch +
+                "=" +
+                off
+        }
+
+
+        return result
+    }
+    
+
 
     //==================================================
     // 内部：FULL_ON

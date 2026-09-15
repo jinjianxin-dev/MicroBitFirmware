@@ -11,10 +11,12 @@ namespace MBRouter {
     export function handle(
         result:MBParser.Result
     ) {
+        /*
         //测试
         bluetooth.uartWriteLine(
             "start MBRouter.handle" 
         )
+        */
 
         if(
             !result.valid
@@ -29,10 +31,12 @@ namespace MBRouter {
 
         let success = false
 
+        /*
         //测试
         bluetooth.uartWriteLine(
             "start MBRouter.handle:" + result.type
         )
+        */
 
         switch (result.type) {
             /*

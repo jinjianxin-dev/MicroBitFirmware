@@ -23,15 +23,19 @@ namespace MBSystemHandler {
                 return version()
 
             case "INFO":
-                //L298N.stop(0)
-
-                basic.showString("I")
+                MBCar.stop()
+                basic.showString("S")
                 return info()
             
             case "SENSOR":
                 basic.showString("S")
                 return sensor()
-
+            
+            case "PCA":
+                MBTransport.send(PCA9685.getStatusString())
+                
+                return true
+            
             case "RESET":
                 return reset()
 

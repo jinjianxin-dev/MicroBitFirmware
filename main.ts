@@ -1,7 +1,9 @@
 
 
 
-//PCA9685.init()
+
+//MBCar.init()
+MBPCA9685Servo.init()
 
 bluetooth.startUartService()
 
@@ -19,3 +21,28 @@ bluetooth.onUartDataReceived(
     }
 )
 
+/*
+basic.forever(function () {
+    basic.showNumber(Ultrasonic.distanceCM())
+    basic.pause(300)
+})
+*/
+
+basic.forever(function () {
+
+    Obstacle.scan()
+
+    basic.showString(
+        "L" + Obstacle.leftDistance()
+    )
+
+    basic.showString(
+        "C" + Obstacle.centerDistance()
+    )
+
+    basic.showString(
+        "R" + Obstacle.rightDistance()
+    )
+
+    basic.pause(1000)
+})

@@ -46,8 +46,8 @@ namespace PCA_L298N {
     //==================================================
 
     // 轮子 0
-    let MOTOR_0_IN1 = 8
-    let MOTOR_0_IN2 = 9
+    let MOTOR_0_IN1 = 9
+    let MOTOR_0_IN2 = 8
 
     // 轮子 1
     let MOTOR_1_IN1 = 12
