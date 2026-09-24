@@ -23,8 +23,14 @@ namespace MBNumberHandler {
                 return true
 
             case "1":
-                
-                  MBPCA9685Servo.moveTo(0,90)
+                i_stop = 0
+                basic.forever(function () {
+                    if (i_stop == 0) {
+                        MBCar.autoAvoid()
+                    }
+                   
+                })
+
                 return true
             case "2":
                 MBPCA9685Servo.moveTo(0,180)

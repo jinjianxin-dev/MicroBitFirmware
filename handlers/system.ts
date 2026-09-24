@@ -24,6 +24,7 @@ namespace MBSystemHandler {
 
             case "INFO":
                 MBCar.stop()
+                i_stop = 1
                 basic.showString("S")
                 return info()
             

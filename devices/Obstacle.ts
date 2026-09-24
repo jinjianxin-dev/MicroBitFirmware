@@ -1,131 +1,267 @@
 /**
- * 超声波舵机扫描
+ * 主动避障扫描器 V4.0.0 Stable
  *
- * 硬件：
- * HC-SR04
- *   Trig -> P13
- *   Echo -> P14
- *
- * SG90
- *   PCA9685 CH0
- *
- * 扫描角度：
- * 左   150°
- * 中   90°
- * 右   30°
+ * 功能：
+ * - 五方向扫描
+ * - 左外 / 左前 / 中 / 右前 / 右外
+ * - 返回最佳方向
+ * - 保留 V3 接口兼容 APP
  */
 
-//% color=#FF9800 icon="\uf1d8" weight=70
+//% color=#03A9F4 weight=82 icon="\uf140"
 namespace Obstacle {
 
     //==================================================
     // 常量
     //==================================================
 
-    const SERVO = 0
+    const SERVO_CHANNEL = 0
 
-    const LEFT_ANGLE = 180
+    const MAX_DISTANCE = 100
+
+    const LEFT_ANGLE = 160
+    const LEFT_FRONT_ANGLE = 125
     const CENTER_ANGLE = 90
-    const RIGHT_ANGLE = 0
-
-    //==================================================
-    // 扫描结果
-    //==================================================
-
-    let left = 0
-    let center = 0
-    let right = 0
-
-    //==================================================
-    // 扫描
-    //==================================================
+    const RIGHT_FRONT_ANGLE = 55
+    const RIGHT_ANGLE = 20
 
     /**
-     * 扫描左、中、右三个方向
+     * 舵机稳定等待时间
      */
-    //% block="扫描障碍物"
+    const SERVO_DELAY = 45
+
+    //==================================================
+    // 距离缓存
+    //==================================================
+
+    let leftDistanceValue = MAX_DISTANCE
+    let leftFrontDistanceValue = MAX_DISTANCE
+    let centerDistanceValue = MAX_DISTANCE
+    let rightFrontDistanceValue = MAX_DISTANCE
+    let rightDistanceValue = MAX_DISTANCE
+
+    //==================================================
+    // 初始化
+    //==================================================
+
+    export function init(): void {
+
+        MBPCA9685Servo.setAngle(SERVO_CHANNEL, CENTER_ANGLE)
+
+        basic.pause(100)
+
+        leftDistanceValue = MAX_DISTANCE
+        leftFrontDistanceValue = MAX_DISTANCE
+        centerDistanceValue = MAX_DISTANCE
+        rightFrontDistanceValue = MAX_DISTANCE
+        rightDistanceValue = MAX_DISTANCE
+    }
+
+    //==================================================
+    // 测一个角度
+    //==================================================
+
+    function readAtAngle(angle: number): number {
+
+        MBPCA9685Servo.setAngle(SERVO_CHANNEL, angle)
+
+        basic.pause(SERVO_DELAY)
+
+        let d = Ultrasonic.distanceCM()
+
+        if (d <= 0 || d > MAX_DISTANCE) {
+            d = MAX_DISTANCE
+        }
+
+        return d
+    }
+
+    //==================================================
+    // 扫描五个方向
+    //==================================================
+
     export function scan(): void {
 
-        // 左
-        MBPCA9685Servo.setAngle(
-            SERVO,
-            LEFT_ANGLE
-        )
+        //------------------------------------------
+        // 左外
+        //------------------------------------------
 
-        basic.pause(500)
+        leftDistanceValue = readAtAngle(LEFT_ANGLE)
 
-        left = Ultrasonic.distanceCM()
+        //------------------------------------------
+        // 左前
+        //------------------------------------------
 
+        leftFrontDistanceValue = readAtAngle(LEFT_FRONT_ANGLE)
 
+        //------------------------------------------
         // 中
-        MBPCA9685Servo.setAngle(
-            SERVO,
-            CENTER_ANGLE
-        )
+        //------------------------------------------
 
-        basic.pause(500)
+        centerDistanceValue = readAtAngle(CENTER_ANGLE)
 
-        center = Ultrasonic.distanceCM()
+        //------------------------------------------
+        // 右前
+        //------------------------------------------
 
+        rightFrontDistanceValue = readAtAngle(RIGHT_FRONT_ANGLE)
 
-        // 右
-        MBPCA9685Servo.setAngle(
-            SERVO,
-            RIGHT_ANGLE
-        )
+        //------------------------------------------
+        // 右外
+        //------------------------------------------
 
-        basic.pause(500)
+        rightDistanceValue = readAtAngle(RIGHT_ANGLE)
 
-        right = Ultrasonic.distanceCM()
+        //------------------------------------------
+        // 回中
+        //------------------------------------------
 
-
-        // 回到中间
-        MBPCA9685Servo.setAngle(
-            SERVO,
-            CENTER_ANGLE
-        )
+        MBPCA9685Servo.setAngle(SERVO_CHANNEL, CENTER_ANGLE)
     }
 
     //==================================================
-    // 获取扫描结果
+    // 单方向读取
     //==================================================
 
-    /**
-     * 左侧距离
-     */
     export function leftDistance(): number {
-        return left
+        return leftDistanceValue
     }
 
-    /**
-     * 中间距离
-     */
+    export function leftFrontDistance(): number {
+        return leftFrontDistanceValue
+    }
+
     export function centerDistance(): number {
-        return center
+        return centerDistanceValue
     }
 
-    /**
-     * 右侧距离
-     */
+    export function rightFrontDistance(): number {
+        return rightFrontDistanceValue
+    }
+
     export function rightDistance(): number {
-        return right
+        return rightDistanceValue
     }
 
     //==================================================
-    // 最佳方向
+    // 保留 V3 接口（兼容旧代码）
     //==================================================
 
-    /**
-     * 返回较空的一侧
-     *
-     * 0 = 左
-     * 1 = 右
-     */
+    export function leftBestDistance(): number {
+
+        if (leftDistanceValue > leftFrontDistanceValue)
+            return leftDistanceValue
+
+        return leftFrontDistanceValue
+    }
+
+    export function rightBestDistance(): number {
+
+        if (rightDistanceValue > rightFrontDistanceValue)
+            return rightDistanceValue
+
+        return rightFrontDistanceValue
+    }
+
+    //==================================================
+    // 返回最佳方向
+    //
+    // -1 = 左
+    //  0 = 前
+    //  1 = 右
+    //==================================================
+
     export function bestDirection(): number {
 
-        if (left > right)
-            return 0
+        let leftScore = leftDistanceValue + leftFrontDistanceValue
+        let rightScore = rightDistanceValue + rightFrontDistanceValue
 
-        return 1
+        //------------------------------------------
+        // 前方已经很空
+        //------------------------------------------
+
+        if (centerDistanceValue >= leftScore &&
+            centerDistanceValue >= rightScore) {
+            return 0
+        }
+
+        //------------------------------------------
+        // 左边更空
+        //------------------------------------------
+
+        if (leftScore > rightScore)
+            return -1
+
+        //------------------------------------------
+        // 右边更空
+        //------------------------------------------
+
+        if (rightScore > leftScore)
+            return 1
+
+        //------------------------------------------
+        // 一样远
+        //------------------------------------------
+
+        return 0
+    }
+
+    //==================================================
+    // 最大可通行距离
+    //==================================================
+
+    export function maxDistance(): number {
+
+        let m = centerDistanceValue
+
+        if (leftDistanceValue > m)
+            m = leftDistanceValue
+
+        if (leftFrontDistanceValue > m)
+            m = leftFrontDistanceValue
+
+        if (rightFrontDistanceValue > m)
+            m = rightFrontDistanceValue
+
+        if (rightDistanceValue > m)
+            m = rightDistanceValue
+
+        return m
+    }
+
+    //==================================================
+    // 调试字符串（APP 使用）
+    //==================================================
+
+    export function getStatusString(): string {
+
+        return "L=" + leftDistanceValue
+            + ";LF=" + leftFrontDistanceValue
+            + ";C=" + centerDistanceValue
+            + ";RF=" + rightFrontDistanceValue
+            + ";R=" + rightDistanceValue
+    }
+
+    //==================================================
+    // 调试显示（micro:bit LED）
+    //==================================================
+
+    //% block="显示扫描结果"
+    export function showResult(): void {
+
+        basic.showString("L")
+        basic.showNumber(leftDistanceValue)
+
+        basic.showString("F")
+        basic.showNumber(leftFrontDistanceValue)
+
+        basic.showString("C")
+        basic.showNumber(centerDistanceValue)
+
+        basic.showString("f")
+        basic.showNumber(rightFrontDistanceValue)
+
+        basic.showString("R")
+        basic.showNumber(rightDistanceValue)
     }
 }
