@@ -30,11 +30,11 @@ namespace MBPCA9685Servo {
     const CHANNEL_COUNT = 16
 
     const DEFAULT_MAX_ANGLE = 180
-    const DEFAULT_MIN_PULSE = 1000
-    const DEFAULT_MAX_PULSE = 2000
+    const DEFAULT_MIN_PULSE = 500
+    const DEFAULT_MAX_PULSE = 2500
 
     const MIN_PULSE_LIMIT = 500
-    const MAX_PULSE_LIMIT = 2500
+    const MAX_PULSE_LIMIT = 3000
 
 
     //==================================================
@@ -152,6 +152,7 @@ namespace MBPCA9685Servo {
 
         angle = clampAngle(channel, angle)
 
+        //basic.showNumber(angle)
         PCA9685.setPulse(
             channel,
             angleToPulse(channel, angle)
@@ -608,6 +609,7 @@ namespace MBPCA9685Servo {
      */
     //% block="同步移动 舵机%ch1 到%angle1° 舵机%ch2 到%angle2°"
     //% inlineInputMode=inline
+    /*
     export function moveToSync2(
         ch1: number,
         angle1: number,
@@ -671,6 +673,7 @@ namespace MBPCA9685Servo {
             moving[ch2] = false
         })
     }
+    */
 
 
 
@@ -685,7 +688,7 @@ namespace MBPCA9685Servo {
      * 暂停状态返回 false。
      */
     //% block="舵机 %channel 正在运动"
-    /*
+  
     export function isMoving(
         channel: number
     ): boolean {
@@ -696,14 +699,14 @@ namespace MBPCA9685Servo {
         return moving[channel] &&
             !paused[channel]
     }
-    */
+
 
 
     /**
      * 判断舵机是否处于暂停状态
      */
     //% block="舵机 %channel 已暂停"
-    /*
+
     export function isPaused(
         channel: number
     ): boolean {
@@ -713,14 +716,14 @@ namespace MBPCA9685Servo {
 
         return paused[channel]
     }
-    */
+
 
 
     /**
      * 获取当前角度
      */
     //% block="舵机 %channel 当前角度"
-    /*
+
     export function getAngle(
         channel: number
     ): number {
@@ -730,14 +733,14 @@ namespace MBPCA9685Servo {
 
         return currentAngle[channel]
     }
-    */
+  
 
 
     /**
      * 获取目标角度
      */
     //% block="舵机 %channel 目标角度"
-    /*
+
     export function getTargetAngle(
         channel: number
     ): number {
@@ -747,7 +750,7 @@ namespace MBPCA9685Servo {
 
         return targetAngle[channel]
     }
-    */
+
 
 
     //==================================================
@@ -760,6 +763,7 @@ namespace MBPCA9685Servo {
      * 保持当前位置。
      */
     //% block="停止所有舵机"
+ 
     /*
     export function stopAll(): void {
 
@@ -784,6 +788,7 @@ namespace MBPCA9685Servo {
         }
     }
     */
+ 
 
 
     /**
@@ -804,6 +809,7 @@ namespace MBPCA9685Servo {
         }
     }
     */
+
 
     /**
      * 继续所有舵机
@@ -828,6 +834,7 @@ namespace MBPCA9685Servo {
     */
 
 
+ 
     //==================================================
     // 软件参数复位
     //==================================================
@@ -850,6 +857,7 @@ namespace MBPCA9685Servo {
         resetChannel(channel)
     }
     */
+ 
 
 
     /**
@@ -872,4 +880,5 @@ namespace MBPCA9685Servo {
         }
     }
     */
+ 
 }

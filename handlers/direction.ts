@@ -41,7 +41,7 @@ namespace MBDirectionHandler {
 
 
     function up():boolean{
-        MBCar.forward()
+       // MBCar.forward()
 
         basic.showArrow(
             ArrowNames.North
@@ -53,7 +53,7 @@ namespace MBDirectionHandler {
 
 
     function down(): boolean{
-        MBCar.backward()
+       // MBCar.backward()
 
         basic.showArrow(
             ArrowNames.South
@@ -65,7 +65,7 @@ namespace MBDirectionHandler {
 
     function left(): boolean{
         
-        MBCar.turnLeft()
+       // MBCar.turnLeft()
         basic.showArrow(
             ArrowNames.West
         )
@@ -76,7 +76,7 @@ namespace MBDirectionHandler {
 
     function right(): boolean{
         
-        MBCar.turnRight()
+       // MBCar.turnRight()
         basic.showArrow(
             ArrowNames.East
         )

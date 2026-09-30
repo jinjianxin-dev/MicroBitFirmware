@@ -23,7 +23,7 @@ namespace MBSystemHandler {
                 return version()
 
             case "INFO":
-                MBCar.stop()
+                //MBCar.stop()
                 i_stop = 1
                 basic.showString("S")
                 return info()
